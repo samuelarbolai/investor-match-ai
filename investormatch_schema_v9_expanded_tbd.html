@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>InvestorMatch v9 — Property‑Expanded (TBD‑Flagged)</title>
+  <style>
+    :root { --bg:#0b1220; --ink:#e6eefc; --muted:#9bb0d3; --card:#121a2b; --accent:#58a6ff; }
+    html,body { margin:0; background:var(--bg); color:var(--ink); font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; }
+    .wrap { max-width: 1280px; margin: 32px auto; padding: 0 16px 120px; }
+    .card { background: var(--card); border:1px solid #233152; border-radius:16px; padding:18px 20px; margin: 20px 0;}
+    h1 { margin: 0 0 8px; font-size: 30px; }
+    .muted { color: var(--muted); }
+    pre { background:#0e1626; border:1px solid #22314f; color:#eaeffb; padding:14px; border-radius:12px; overflow:auto; }
+    a { color: var(--accent); text-decoration: none; }
+    .legend { font-size: 14px; color: var(--muted); }
+  </style>
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({ startOnLoad: true, theme: 'dark' });
+  </script>
+</head>
+<body>
+  <div class="wrap">
+    <h1>InvestorMatch Graph Schema v9</h1>
+    <p class="muted">Property‑expanded diagram with <b>⚠️ TBD</b> flags on vocabularies that are not finalized yet.</p>
+
+    <div class="card">
+      <div class="legend">Legend: <b>type</b> annotations shown; <b>⚠️ TBD</b> marks enums/taxonomies still to be defined (e.g., the list of <i>Verticals</i>).</div>
+      <pre class="mermaid" style="height:2800px;">
+classDiagram
+
+%% =====================
+%% CORE ENTITIES
+%% =====================
+class Contact {
+  name : string
+  email : string (unique)
+  summary : string
+}
+
+class Experience {
+  start_date : date
+  end_date : date?
+  is_current : boolean
+  description : string?
+}
+
+class Company {
+  name : string
+  domain : string (unique)
+  description : string?
+}
+
+%% =====================
+%% VOCABS / FACETS
+%% =====================
+class JobRole {
+  name : string
+  %% ⚠️ TBD taxonomy (optional controlled list)
+}
+
+class Skill {
+  name : string
+  %% ⚠️ TBD taxonomy (optional controlled list)
+}
+
+class Industry {
+  name : string
+  %% ⚠️ ⚠️ TBD industry taxonomy not finalized
+}
+
+class Vertical {
+  name : string
+  %% ⚠️ TBD vertical list not finalized
+}
+
+class RaisedCapital {
+  range : string  %% e.g. "<500K USD","500K–2M USD","2–5M USD",">5M USD"
+}
+
+class Headcount {
+  range : string  %% e.g. "<10","10–50",">50"
+}
+
+class EngineersHeadcount {
+  ratio_range : string  %% e.g. "<30%","30–60%",">60%"
+}
+
+class FoundationYear {
+  range : string  %% e.g. "2018–2020","2021–2023"
+}
+
+class Location {
+  name : string  %% freeform or ISO/city,country
+}
+
+class TypeOfGoodProduced {
+  name : enum  %% Software | Hardware | Non-tech | Capital Management
+}
+
+%% =====================
+%% INTENT & THESIS
+%% =====================
+class JobToBeDone {
+  name : enum  %% Raise Capital | Invest Capital | Find Lead Investor | Hire CTO | Recruit Engineers
+}
+
+class TargetCriterion {
+  dimension : string  %% e.g. "Industry","Location","RaisedCapital","Vertical","TypeOfGoodProduced","Headcount","EngineersHeadcount","FoundationYear","Skill","JobRole"
+  operator : string   %% "=", "in", ">=", "<=", "between"
+  weight : float?     %% optional scoring weight  ⚠️ TBD scale definition
+}
+
+%% =====================
+%% INTRO PIPELINE
+%% =====================
+class IntroStage {
+  stage : enum  %% prospected | outreached | meeting_set | met | closed | disqualified
+  disqualification_reason : string?
+  created_at : date
+  updated_at : date?
+  notes : string?
+  conversion_score : float?
+  campaign_id : string?
+}
+
+%% =====================
+%% RELATIONSHIPS
+%% =====================
+Contact --> Experience : HAS_EXPERIENCE
+Experience --> Company : AT
+Experience --> JobRole : HAS_ROLE
+Experience --> Skill : HAS_SKILL
+
+Contact --> Location : IS_LOCATED_AT
+Company --> Location : LOCATED_IN
+
+Company --> Industry : IN_INDUSTRY
+Company --> Vertical : IN_VERTICAL
+Vertical --> Industry : IS_IN
+Company --> RaisedCapital : HAS_RAISED
+Company --> Headcount : HAS_HEADCOUNT
+Company --> EngineersHeadcount : HAS_ENGINEERS_HEADCOUNT
+Company --> FoundationYear : FOUNDED_IN
+Company --> TypeOfGoodProduced : PRODUCES
+
+Contact --> JobToBeDone : FOCUSED_ON
+Contact --> TargetCriterion : TARGETS
+
+%% TargetCriterion links to ALL facets + talent filters
+TargetCriterion --> Industry : FILTERS_ON
+TargetCriterion --> Vertical : FILTERS_ON
+TargetCriterion --> Location : FILTERS_ON
+TargetCriterion --> RaisedCapital : FILTERS_ON
+TargetCriterion --> Headcount : FILTERS_ON
+TargetCriterion --> EngineersHeadcount : FILTERS_ON
+TargetCriterion --> FoundationYear : FILTERS_ON
+TargetCriterion --> TypeOfGoodProduced : FILTERS_ON
+TargetCriterion --> Skill : FILTERS_ON
+TargetCriterion --> JobRole : FILTERS_ON
+
+%% Intro lifecycle between two contacts
+Contact --> IntroStage : IS_IN_STAGE
+IntroStage --> Contact : FOR_CONTACT
+      </pre>
+    </div>
+  </div>
+</body>
+</html>
