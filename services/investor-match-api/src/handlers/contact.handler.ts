@@ -315,6 +315,130 @@ export class ContactHandler {
   GET /v1/contacts?limit=20&orderBy=name&direction=asc  s
   */
   
+
+    /**
+   * @swagger
+   * /v1/contacts/{id}:
+   *   patch:
+   *     summary: Update an existing contact
+   *     tags: [Contacts]
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: string
+   *         description: Contact ID
+   *         example: "jane-founder-abc123"
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             properties:
+   *               full_name:
+   *                 type: string
+   *                 description: Full name of the contact
+   *                 example: "Jane Founder"
+   *               contact_type:
+   *                 type: string
+   *                 enum: [founder, investor, both]
+   *                 description: Type of contact
+   *                 example: "founder"
+   *               headline:
+   *                 type: string
+   *                 description: Professional headline
+   *                 example: "Building the future of fintech"
+   *               location_city:
+   *                 type: string
+   *                 description: City location
+   *                 example: "San Francisco"
+   *               location_country:
+   *                 type: string
+   *                 description: Country location
+   *                 example: "USA"
+   *               skills:
+   *                 type: array
+   *                 items:
+   *                   type: string
+   *                 description: Array of skills
+   *                 example: ["javascript", "product-management", "fundraising"]
+   *               industries:
+   *                 type: array
+   *                 items:
+   *                   type: string
+   *                 description: Array of industries
+   *                 example: ["fintech", "saas", "b2b"]
+   *               verticals:
+   *                 type: array
+   *                 items:
+   *                   type: string
+   *                 description: Array of verticals
+   *                 example: ["payments", "lending"]
+   *               funding_stages:
+   *                 type: array
+   *                 items:
+   *                   type: string
+   *                 description: Array of funding stages
+   *                 example: ["seed", "series-a"]
+   *               current_company:
+   *                 type: string
+   *                 description: Current company name
+   *                 example: "TechStartup Inc"
+   *               current_role:
+   *                 type: string
+   *                 description: Current role/position
+   *                 example: "CEO & Founder"
+   *               linkedin_url:
+   *                 type: string
+   *                 description: LinkedIn profile URL
+   *                 example: "https://linkedin.com/in/jane-founder"
+   *               email:
+   *                 type: string
+   *                 format: email
+   *                 description: Email address
+   *                 example: "jane@techstartup.com"
+   *           examples:
+   *             updateHeadline:
+   *               summary: Update headline only
+   *               value:
+   *                 headline: "Now scaling fintech to 10M users"
+   *             updateLocation:
+   *               summary: Update location
+   *               value:
+   *                 location_city: "Austin"
+   *                 location_country: "USA"
+   *             updateSkills:
+   *               summary: Update skills
+   *               value:
+   *                 skills: ["javascript", "react", "node.js", "aws"]
+   *     responses:
+   *       200:
+   *         description: Contact updated successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Contact'
+   *       404:
+   *         description: Contact not found
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   *       400:
+   *         description: Validation error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   *       500:
+   *         description: Server error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   */
   async updateContact(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
