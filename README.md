@@ -1,5 +1,8 @@
 # Investor Match API
 
+[![Test Suite](https://github.com/samuelarbolai/investor-match-ai/actions/workflows/test.yml/badge.svg)](https://github.com/samuelarbolai/investor-match-ai/actions/workflows/test.yml)
+[![Deploy to Cloud Run](https://github.com/samuelarbolai/investor-match-ai/actions/workflows/deploy.yml/badge.svg)](https://github.com/samuelarbolai/investor-match-ai/actions/workflows/deploy.yml)
+
 Graph-based founder-investor matching system using Firestore as a cost-optimized graph database.
 
 ## Setup

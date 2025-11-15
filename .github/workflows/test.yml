@@ -1,0 +1,71 @@
+name: Test Suite
+
+on:
+  pull_request:
+    branches: [ main, dev ]
+  push:
+    branches: [ dev ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: services/contact-service/package-lock.json
+    
+    - name: Install dependencies
+      working-directory: services/contact-service
+      run: npm ci
+    
+    - name: Run unit tests
+      working-directory: services/contact-service
+      run: npm run test:coverage
+    
+    - name: Check coverage threshold
+      working-directory: services/contact-service
+      run: |
+        COVERAGE=$(npm run test:coverage -- --silent | grep "All files" | awk '{print $10}' | sed 's/%//')
+        if [ "$COVERAGE" -lt 80 ]; then
+          echo "Coverage $COVERAGE% is below 80% threshold"
+          exit 1
+        fi
+        echo "Coverage: $COVERAGE%"
+    
+    - name: Setup Firebase Emulator
+      working-directory: services/contact-service
+      run: |
+        npm install -g firebase-tools
+        firebase emulators:start --only firestore --project demo-test &
+        sleep 10
+    
+    - name: Run integration tests
+      working-directory: services/contact-service
+      run: npm run test:integration
+      env:
+        FIRESTORE_EMULATOR_HOST: localhost:8080
+    
+    - name: Install k6
+      run: |
+        sudo gpg -k
+        sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
+        echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
+        sudo apt-get update
+        sudo apt-get install k6
+    
+    - name: Run load tests
+      working-directory: services/contact-service
+      run: |
+        npm run dev &
+        sleep 15
+        k6 run tests/load/basic-load-test.js --quiet
+        if [ $? -ne 0 ]; then
+          echo "Load tests failed"
+          exit 1
+        fi
