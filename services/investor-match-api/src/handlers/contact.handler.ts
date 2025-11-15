@@ -200,49 +200,64 @@ export class ContactHandler {
     }
   }
 
-  /**
+    /**
    * @swagger
-   * /v1/contacts/{id}:
-   *   patch:
-   *     summary: Update contact by ID
+   * /v1/contacts:
+   *   get:
+   *     summary: Get all contacts with pagination
    *     tags: [Contacts]
    *     parameters:
-   *       - in: path
-   *         name: id
-   *         required: true
+   *       - in: query
+   *         name: limit
+   *         schema:
+   *           type: integer
+   *           default: 10
+   *           maximum: 100
+   *         description: Number of contacts per page (max 100)
+   *       - in: query
+   *         name: startAfter
    *         schema:
    *           type: string
-   *         description: Contact ID
-   *         example: "jane-founder-abc123"
-   *     requestBody:
-   *       required: true
-   *       content:
-   *         application/json:
-   *           schema:
-   *             $ref: '#/components/schemas/Contact'
-   *           example:
-   *             headline: "Updated headline"
-   *             skills: ["python", "machine-learning"]
-   *             industries: ["ai", "healthcare"]
+   *         description: Contact ID to start after (for pagination)
    *     responses:
    *       200:
-   *         description: Contact updated successfully
+   *         description: List of contacts with pagination info
    *         content:
    *           application/json:
    *             schema:
-   *               $ref: '#/components/schemas/Contact'
-   *       404:
-   *         description: Contact not found
-   *         content:
-   *           application/json:
-   *             schema:
-   *               $ref: '#/components/schemas/Error'
-   *       400:
-   *         description: Validation error
-   *         content:
-   *           application/json:
-   *             schema:
-   *               $ref: '#/components/schemas/Error'
+   *               type: object
+   *               properties:
+   *                 data:
+   *                   type: array
+   *                   items:
+   *                     type: object
+   *                     properties:
+   *                       id:
+   *                         type: string
+   *                       name:
+   *                         type: string
+   *                       email:
+   *                         type: string
+   *                       type:
+   *                         type: string
+   *                 pagination:
+   *                   type: object
+   *                   properties:
+   *                     total:
+   *                       type: integer
+   *                       description: Number of contacts in current page
+   *                     limit:
+   *                       type: integer
+   *                       description: Page size limit
+   *                     nextCursor:
+   *                       type: string
+   *                       nullable: true
+   *                       description: ID of last contact (use as startAfter for next page)
+   *                     hasMore:
+   *                       type: boolean
+   *                       description: Whether more pages are available
+   *       500:
+   *         description: Server error
    */
   async getAllContacts(req: Request, res: Response): Promise<void> {
   try {
