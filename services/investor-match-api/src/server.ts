@@ -12,6 +12,7 @@ import {
   matchQuerySchema, 
   contactIdSchema 
 } from './validators/contact.validator';
+import { specs, swaggerUi } from './config/swagger';
 
 const app = express();
 const contactHandler = new ContactHandler();
@@ -25,10 +26,16 @@ app.use(express.json({ limit: '10mb' }));
 app.use(requestLogger);
 app.use(performanceLogger);
 
+// Swagger API documentation
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs, {
+  customCss: '.swagger-ui .topbar { display: none }',
+  customSiteTitle: 'Investor Match API Documentation'
+}));
+
 // Health check (no versioning)
 app.get('/health', (req, res) => {
   res.json({ 
-    service: 'contact-service', 
+    service: 'investor-match-api', 
     status: 'OK', 
     timestamp: new Date().toISOString(),
     version: '1.0.0'

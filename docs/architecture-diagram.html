@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Investor Match API - Architecture Diagram</title>
+    <meta charset="utf-8">
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .diagram-container { text-align: center; margin: 20px 0; }
+        .component { 
+            display: inline-block; 
+            margin: 10px; 
+            padding: 15px; 
+            border: 2px solid #333; 
+            border-radius: 8px; 
+            background: #f9f9f9;
+            min-width: 120px;
+        }
+        .service { background: #e3f2fd; border-color: #1976d2; }
+        .database { background: #f3e5f5; border-color: #7b1fa2; }
+        .external { background: #e8f5e8; border-color: #388e3c; }
+        .flow { margin: 20px 0; }
+        .arrow { font-size: 24px; color: #666; }
+        h1, h2 { color: #333; }
+        .legend { text-align: left; margin: 20px 0; }
+        .legend-item { margin: 5px 0; }
+    </style>
+</head>
+<body>
+    <h1>Investor Match API - System Architecture</h1>
+    
+    <h2>Monolithic Architecture Overview</h2>
+    
+    <div class="diagram-container">
+        <div class="component external">
+            <strong>Client Applications</strong><br>
+            Web Apps, Mobile Apps<br>
+            Third-party Integrations
+        </div>
+        
+        <div class="flow">
+            <span class="arrow">↓</span><br>
+            <small>HTTPS Requests</small>
+        </div>
+        
+        <div class="component service">
+            <strong>investor-match-api</strong><br>
+            <small>Cloud Run (us-east1)</small><br>
+            Node.js + Express + TypeScript
+        </div>
+        
+        <div class="flow">
+            <span class="arrow">↓</span><br>
+            <small>Firestore SDK</small>
+        </div>
+        
+        <div class="component database">
+            <strong>Cloud Firestore</strong><br>
+            <small>Document Database</small><br>
+            Contacts + Reverse Indexes
+        </div>
+    </div>
+    
+    <h2>Internal Service Components</h2>
+    
+    <div class="diagram-container">
+        <div style="display: flex; justify-content: center; flex-wrap: wrap; gap: 20px;">
+            <div class="component service" style="background: #fff3e0; border-color: #f57c00;">
+                <strong>API Layer</strong><br>
+                • Express Routes<br>
+                • Joi Validation<br>
+                • Error Handling<br>
+                • Request Logging
+            </div>
+            
+            <div class="component service" style="background: #fce4ec; border-color: #c2185b;">
+                <strong>Business Logic</strong><br>
+                • Contact CRUD<br>
+                • Matching Algorithm<br>
+                • Data Flattening<br>
+                • Reverse Index Sync
+            </div>
+            
+            <div class="component service" style="background: #e0f2f1; border-color: #00695c;">
+                <strong>Data Layer</strong><br>
+                • Firebase Config<br>
+                • Collection Helpers<br>
+                • Document Models<br>
+                • Batch Operations
+            </div>
+        </div>
+    </div>
+    
+    <h2>Data Flow Architecture</h2>
+    
+    <div class="diagram-container">
+        <div style="text-align: left; max-width: 800px; margin: 0 auto;">
+            <h3>1. Contact Creation Flow</h3>
+            <p><strong>POST /v1/contacts</strong></p>
+            <ol>
+                <li>Client sends contact data → API validation</li>
+                <li>Data flattening (extract from experiences)</li>
+                <li>Create contact document in Firestore</li>
+                <li>Update reverse indexes (10 attribute collections)</li>
+                <li>Return created contact with ID</li>
+            </ol>
+            
+            <h3>2. Matching Algorithm Flow</h3>
+            <p><strong>GET /v1/contacts/:id/matches</strong></p>
+            <ol>
+                <li>Load seed contact from Firestore</li>
+                <li>For each attribute type (skills, industries, etc.):
+                    <ul>
+                        <li>Load reverse index documents</li>
+                        <li>Collect candidate contact IDs</li>
+                        <li>Aggregate scores in-memory</li>
+                    </ul>
+                </li>
+                <li>Rank candidates by score</li>
+                <li>Load top candidate details</li>
+                <li>Return ranked matches with overlap summaries</li>
+            </ol>
+        </div>
+    </div>
+    
+    <h2>Database Schema</h2>
+    
+    <div class="diagram-container">
+        <div style="display: flex; justify-content: center; flex-wrap: wrap; gap: 20px;">
+            <div class="component database">
+                <strong>/contacts/{id}</strong><br>
+                • 33 fields<br>
+                • Embedded experiences<br>
+                • Flattened attributes<br>
+                • Timestamps
+            </div>
+            
+            <div class="component database">
+                <strong>/skills/{skillId}</strong><br>
+                • id, label<br>
+                • contact_ids[]<br>
+                • updated_at
+            </div>
+            
+            <div class="component database">
+                <strong>/industries/{industryId}</strong><br>
+                • id, label<br>
+                • contact_ids[]<br>
+                • updated_at
+            </div>
+            
+            <div class="component database">
+                <strong>+ 8 more attribute collections</strong><br>
+                verticals, productTypes,<br>
+                fundingStages, roles, etc.
+            </div>
+        </div>
+    </div>
+    
+    <h2>Deployment Architecture</h2>
+    
+    <div class="diagram-container">
+        <div style="display: flex; justify-content: center; align-items: center; gap: 30px;">
+            <div class="component external">
+                <strong>GitHub Repository</strong><br>
+                Source Code<br>
+                CI/CD Workflows
+            </div>
+            
+            <div style="text-align: center;">
+                <span class="arrow">→</span><br>
+                <small>Push to main</small>
+            </div>
+            
+            <div class="component service">
+                <strong>GitHub Actions</strong><br>
+                • Run Tests<br>
+                • Build Docker Image<br>
+                • Deploy to Cloud Run
+            </div>
+            
+            <div style="text-align: center;">
+                <span class="arrow">→</span><br>
+                <small>Automated Deploy</small>
+            </div>
+            
+            <div class="component service">
+                <strong>Cloud Run Service</strong><br>
+                investor-match-api<br>
+                us-east1 region<br>
+                Serverless scaling
+            </div>
+        </div>
+    </div>
+    
+    <div class="legend">
+        <h3>Legend</h3>
+        <div class="legend-item"><span class="component service" style="padding: 5px; margin-right: 10px;">Service</span> Application services and components</div>
+        <div class="legend-item"><span class="component database" style="padding: 5px; margin-right: 10px;">Database</span> Data storage and collections</div>
+        <div class="legend-item"><span class="component external" style="padding: 5px; margin-right: 10px;">External</span> External systems and clients</div>
+    </div>
+    
+    <h2>Key Architectural Decisions</h2>
+    
+    <div style="text-align: left; max-width: 800px; margin: 0 auto;">
+        <h3>✅ Monolithic Architecture</h3>
+        <ul>
+            <li><strong>Rationale:</strong> Tight coupling between operations (contact updates must update reverse indexes atomically)</li>
+            <li><strong>Benefits:</strong> ACID transactions, no network overhead, simpler deployment</li>
+            <li><strong>Trade-offs:</strong> Single point of failure, must scale entire service together</li>
+        </ul>
+        
+        <h3>✅ Firestore as Graph Database</h3>
+        <ul>
+            <li><strong>Rationale:</strong> Cost-effective alternative to Neo4j (~$3/month vs $65/month)</li>
+            <li><strong>Implementation:</strong> Reverse indexes for O(1) graph traversals</li>
+            <li><strong>Performance:</strong> <2s response times for 2K+ contacts</li>
+        </ul>
+        
+        <h3>✅ Serverless Deployment</h3>
+        <ul>
+            <li><strong>Platform:</strong> Google Cloud Run for automatic scaling</li>
+            <li><strong>Benefits:</strong> Pay-per-use, automatic HTTPS, zero maintenance</li>
+            <li><strong>CI/CD:</strong> GitHub Actions for automated testing and deployment</li>
+        </ul>
+    </div>
+    
+    <footer style="margin-top: 40px; text-align: center; color: #666; border-top: 1px solid #ddd; padding-top: 20px;">
+        <p>Investor Match API - Architecture Documentation</p>
+        <p>Generated: November 2025 | Version: 1.0.0</p>
+    </footer>
+</body>
+</html>

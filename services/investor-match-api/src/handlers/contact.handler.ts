@@ -4,6 +4,48 @@ import { Contact, ContactInput, ContactType } from '../models/contact.model';
 import { writeSyncService } from '../services/write-sync.service';
 import { matchingService } from '../services/matching.service';
 
+/**
+ * @swagger
+ * tags:
+ *   name: Contacts
+ *   description: Contact management and matching
+ */
+
+export class ContactHandler {
+  /**
+   * @swagger
+   * /v1/contacts:
+   *   post:
+   *     summary: Create a new contact
+   *     tags: [Contacts]
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             $ref: '#/components/schemas/Contact'
+   *           example:
+   *             full_name: "Jane Founder"
+   *             contact_type: "founder"
+   *             headline: "Building the future of fintech"
+   *             skills: ["javascript", "product-management"]
+   *             industries: ["fintech", "saas"]
+   *             funding_stages: ["seed", "series-a"]
+   *     responses:
+   *       201:
+   *         description: Contact created successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Contact'
+   *       400:
+   *         description: Validation error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   */
+
 export class ContactHandler {
   async createContact(req: Request, res: Response): Promise<void> {
     try {
@@ -24,6 +66,33 @@ export class ContactHandler {
     }
   }
 
+  /**
+   * @swagger
+   * /v1/contacts/{id}:
+   *   get:
+   *     summary: Get contact by ID
+   *     tags: [Contacts]
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: string
+   *         description: Contact ID
+   *     responses:
+   *       200:
+   *         description: Contact found
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Contact'
+   *       404:
+   *         description: Contact not found
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   */
   async getContact(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
@@ -86,6 +155,47 @@ export class ContactHandler {
     }
   }
 
+  /**
+   * @swagger
+   * /v1/contacts/{id}/matches:
+   *   get:
+   *     summary: Find matches for a contact
+   *     tags: [Contacts]
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: string
+   *         description: Contact ID to find matches for
+   *       - in: query
+   *         name: type
+   *         schema:
+   *           type: string
+   *           enum: [founder, investor]
+   *         description: Type of contacts to match with
+   *       - in: query
+   *         name: limit
+   *         schema:
+   *           type: integer
+   *           minimum: 1
+   *           maximum: 100
+   *           default: 20
+   *         description: Maximum number of matches to return
+   *     responses:
+   *       200:
+   *         description: Matches found successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/MatchResult'
+   *       404:
+   *         description: Contact not found
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   */
   async matchContacts(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;

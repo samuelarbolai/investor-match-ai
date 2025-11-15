@@ -13,70 +13,43 @@
 
 ---
 
-## Phase 6: Deployment (Week 7)
+## Phase 7: Documentation & Handoff (Week 8)
 
-### Milestone 6.1: Containerization
-**Goal:** Build production-ready Docker image
+### Milestone 7.1: Documentation
+**Goal:** Comprehensive documentation for maintenance
 
 **Tasks:**
-- [ ] Create Dockerfile with multi-stage build
-- [ ] Optimize image size
-- [ ] Add health check endpoint (`/health`)
-- [ ] Configure environment variables
-- [ ] Test local Docker build
+- [ ] Update README with:
+  - Project overview
+  - Setup instructions
+  - API documentation
+  - Environment variables
+  - Deployment guide
+- [ ] Add inline code comments
+- [ ] Generate API documentation (Swagger UI)
+- [ ] Create architecture diagram
+- [ ] Document cost optimization strategies
 
 **Deliverables:**
-- `Dockerfile`
-- `.dockerignore`
-- Health check endpoint
-
-**Testing:**
-- Build image locally: `docker build -t founder-investor-api .`
-- Run container: `docker run -p 8080:8080 founder-investor-api`
-- Hit health endpoint
+- Complete README.md
+- API documentation site
+- Architecture diagram
 
 ---
 
-### Milestone 6.2: Cloud Run Deployment
-**Goal:** Deploy to GCP Cloud Run
+### Milestone 7.2: Monitoring & Observability
+**Goal:** Production monitoring setup
 
 **Tasks:**
-- [ ] Set up GCP project
-- [ ] Enable Cloud Run API
-- [ ] Configure service account with Firestore access
-- [ ] Build and push image to Artifact Registry
-- [ ] Deploy to Cloud Run
-- [ ] Configure environment variables
-- [ ] Set up Cloud Run invoker permissions (public for now)
-- [ ] Configure memory and CPU limits
+- [ ] Set up Cloud Logging
+- [ ] Set up Cloud Monitoring (metrics dashboard)
+- [ ] Create alerts for errors and high latency
+- [ ] Add custom metrics (match query duration, contact creation rate)
+- [ ] Document runbook for common issues
 
 **Deliverables:**
-- Deployed Cloud Run service
-- Public API endpoint URL
-
-**Testing:**
-- Test all API endpoints on production URL
-- Monitor Cloud Run logs
-- Verify Firestore reads/writes
-
----
-
-### Milestone 6.3: CI/CD Pipeline
-**Goal:** Automate testing and deployment
-
-**Tasks:**
-- [ ] Set up GitHub Actions (or Cloud Build)
-- [ ] Create workflow for running tests on PR
-- [ ] Create workflow for building Docker image
-- [ ] Create workflow for deploying to Cloud Run on main branch
-- [ ] Add status badges to README
-
-**Deliverables:**
-- `.github/workflows/*.yml`
-- Automated deployment on merge to main
-
-**Testing:**
-- Create test PR and verify tests run
-- Merge to main and verify auto-deploy
+- GCP monitoring dashboard
+- Alert policies
+- Runbook document
 
 ---
