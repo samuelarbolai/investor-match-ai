@@ -109,6 +109,49 @@ export class ContactHandler {
     }
   }
 
+  /**
+   * @swagger
+   * /v1/contacts/{id}:
+   *   patch:
+   *     summary: Update contact by ID
+   *     tags: [Contacts]
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: string
+   *         description: Contact ID
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             $ref: '#/components/schemas/Contact'
+   *           example:
+   *             headline: "Updated headline"
+   *             skills: ["python", "machine-learning"]
+   *             industries: ["ai", "healthcare"]
+   *     responses:
+   *       200:
+   *         description: Contact updated successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Contact'
+   *       404:
+   *         description: Contact not found
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   *       400:
+   *         description: Validation error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   */
   async updateContact(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
@@ -135,6 +178,40 @@ export class ContactHandler {
     }
   }
 
+  /**
+   * @swagger
+   * /v1/contacts/{id}:
+   *   delete:
+   *     summary: Delete contact by ID
+   *     tags: [Contacts]
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: string
+   *         description: Contact ID
+   *     responses:
+   *       200:
+   *         description: Contact deleted successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 message:
+   *                   type: string
+   *                   example: "Contact deleted successfully"
+   *                 id:
+   *                   type: string
+   *                   example: "contact-123"
+   *       404:
+   *         description: Contact not found
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   */
   async deleteContact(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
