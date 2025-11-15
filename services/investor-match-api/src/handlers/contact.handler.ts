@@ -77,6 +77,7 @@ export class ContactHandler {
    *         schema:
    *           type: string
    *         description: Contact ID
+   *         example: "jane-founder-abc123"
    *     responses:
    *       200:
    *         description: Contact found
@@ -122,6 +123,7 @@ export class ContactHandler {
    *         schema:
    *           type: string
    *         description: Contact ID
+   *         example: "jane-founder-abc123"
    *     requestBody:
    *       required: true
    *       content:
@@ -191,6 +193,7 @@ export class ContactHandler {
    *         schema:
    *           type: string
    *         description: Contact ID
+   *         example: "jane-founder-abc123"
    *     responses:
    *       200:
    *         description: Contact deleted successfully
@@ -243,12 +246,14 @@ export class ContactHandler {
    *         schema:
    *           type: string
    *         description: Contact ID to find matches for
+   *         example: "jane-founder-abc123"
    *       - in: query
    *         name: type
    *         schema:
    *           type: string
    *           enum: [founder, investor]
    *         description: Type of contacts to match with
+   *         example: "investor"
    *       - in: query
    *         name: limit
    *         schema:
@@ -257,6 +262,7 @@ export class ContactHandler {
    *           maximum: 100
    *           default: 20
    *         description: Maximum number of matches to return
+   *         example: 10
    *     responses:
    *       200:
    *         description: Matches found successfully
