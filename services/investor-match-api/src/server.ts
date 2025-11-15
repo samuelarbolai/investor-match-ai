@@ -138,6 +138,10 @@ app.get('/test-firestore', async (req, res) => {
 const v1Router = express.Router();
 
 // Contact CRUD endpoints
+v1Router.get('/contacts', 
+  contactHandler.getAllContacts.bind(contactHandler)
+);
+
 v1Router.post('/contacts', 
   validate(createContactSchema, 'body'),
   contactHandler.createContact.bind(contactHandler)

@@ -244,6 +244,62 @@ export class ContactHandler {
    *             schema:
    *               $ref: '#/components/schemas/Error'
    */
+  async getAllContacts(req: Request, res: Response): Promise<void> {
+  try {
+    const { 
+      limit = '10', 
+      startAfter
+    } = req.query;
+
+    const pageSize = Math.min(parseInt(limit as string), 100);
+    
+    let query = collections.contacts().limit(pageSize);
+
+    // If startAfter is provided, get that document and start after it
+    if (startAfter) {
+      const startDoc = await collections.contacts().doc(startAfter as string).get();
+      if (startDoc.exists) {
+        query = query.startAfter(startDoc);
+      }
+    }
+
+    const snapshot = await query.get();
+    
+    const contacts = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    })) as Contact[];
+
+    const lastDoc = snapshot.docs[snapshot.docs.length - 1];
+    
+    res.json({
+      data: contacts,
+      pagination: {
+        total: contacts.length,
+        limit: pageSize,
+        nextCursor: lastDoc ? lastDoc.id : null,
+        hasMore: contacts.length === pageSize
+      }
+    });
+  } catch (error) {
+    console.error('Failed to get contacts:', error);
+    res.status(500).json({ error: 'Failed to get contacts' });
+  }
+}
+
+  /**
+  ## Usage:
+
+  **First page:**
+  GET /v1/contacts?limit=20
+
+  **Next page:**
+  GET /v1/contacts?limit=20&startAfter=<lastContactId>
+
+  **Custom sorting:**
+  GET /v1/contacts?limit=20&orderBy=name&direction=asc  s
+  */
+  
   async updateContact(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
