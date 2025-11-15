@@ -10,7 +10,7 @@ jobs:
     
     strategy:
       matrix:
-        service: [contact-service, matching-service, flattening-service, reverse-index-service, validation-service]
+        service: [investor-match-api]
     
     steps:
     - uses: actions/checkout@v4

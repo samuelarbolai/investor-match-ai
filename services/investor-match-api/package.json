@@ -1,5 +1,5 @@
 {
-  "name": "contact-service",
+  "name": "investor-match-api",
   "version": "1.0.0",
   "description": "Contact management microservice",
   "main": "dist/server.js",

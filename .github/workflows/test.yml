@@ -18,18 +18,18 @@ jobs:
       with:
         node-version: '18'
         cache: 'npm'
-        cache-dependency-path: services/contact-service/package-lock.json
+        cache-dependency-path: services/investor-match-api/package-lock.json
     
     - name: Install dependencies
-      working-directory: services/contact-service
+      working-directory: services/investor-match-api
       run: npm ci
     
     - name: Run unit tests
-      working-directory: services/contact-service
+      working-directory: services/investor-match-api
       run: npm run test:coverage
     
     - name: Check coverage threshold
-      working-directory: services/contact-service
+      working-directory: services/investor-match-api
       run: |
         COVERAGE=$(npm run test:coverage -- --silent | grep "All files" | awk '{print $10}' | sed 's/%//')
         if [ "$COVERAGE" -lt 80 ]; then
@@ -39,14 +39,14 @@ jobs:
         echo "Coverage: $COVERAGE%"
     
     - name: Setup Firebase Emulator
-      working-directory: services/contact-service
+      working-directory: services/investor-match-api
       run: |
         npm install -g firebase-tools
         firebase emulators:start --only firestore --project demo-test &
         sleep 10
     
     - name: Run integration tests
-      working-directory: services/contact-service
+      working-directory: services/investor-match-api
       run: npm run test:integration
       env:
         FIRESTORE_EMULATOR_HOST: localhost:8080
@@ -60,7 +60,7 @@ jobs:
         sudo apt-get install k6
     
     - name: Run load tests
-      working-directory: services/contact-service
+      working-directory: services/investor-match-api
       run: |
         npm run dev &
         sleep 15
