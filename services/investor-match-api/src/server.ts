@@ -32,6 +32,33 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs, {
   customSiteTitle: 'Investor Match API Documentation'
 }));
 
+/**
+ * @swagger
+ * /health:
+ *   get:
+ *     summary: Health check endpoint
+ *     tags: [System]
+ *     responses:
+ *       200:
+ *         description: Service is healthy
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 service:
+ *                   type: string
+ *                   example: investor-match-api
+ *                 status:
+ *                   type: string
+ *                   example: OK
+ *                 timestamp:
+ *                   type: string
+ *                   format: date-time
+ *                 version:
+ *                   type: string
+ *                   example: "1.0.0"
+ */
 // Health check (no versioning)
 app.get('/health', (req, res) => {
   res.json({ 
@@ -42,6 +69,46 @@ app.get('/health', (req, res) => {
   });
 });
 
+/**
+ * @swagger
+ * /test-firestore:
+ *   get:
+ *     summary: Test Firestore database connection
+ *     tags: [System]
+ *     responses:
+ *       200:
+ *         description: Firestore connection successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 projectId:
+ *                   type: string
+ *                   example: investor-match-ai
+ *                 data:
+ *                   type: object
+ *                   description: Test document data
+ *       500:
+ *         description: Firestore connection failed
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 error:
+ *                   type: string
+ *                   example: Connection failed
+ *                 projectId:
+ *                   type: string
+ *                   example: investor-match-ai
+ */
 // Test Firestore connection (no versioning)
 app.get('/test-firestore', async (req, res) => {
   try {
