@@ -45,8 +45,6 @@ export class ContactHandler {
    *             schema:
    *               $ref: '#/components/schemas/Error'
    */
-
-export class ContactHandler {
   async createContact(req: Request, res: Response): Promise<void> {
     try {
       const input: ContactInput = req.body;
