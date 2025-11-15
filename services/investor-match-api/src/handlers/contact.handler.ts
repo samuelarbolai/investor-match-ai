@@ -23,14 +23,104 @@ export class ContactHandler {
    *       content:
    *         application/json:
    *           schema:
-   *             $ref: '#/components/schemas/Contact'
-   *           example:
-   *             full_name: "Jane Founder"
-   *             contact_type: "founder"
-   *             headline: "Building the future of fintech"
-   *             skills: ["javascript", "product-management"]
-   *             industries: ["fintech", "saas"]
-   *             funding_stages: ["seed", "series-a"]
+   *             type: object
+   *             required:
+   *               - full_name
+   *               - contact_type
+   *             properties:
+   *               full_name:
+   *                 type: string
+   *                 description: Full name of the contact
+   *                 example: "Jane Founder"
+   *               contact_type:
+   *                 type: string
+   *                 enum: [founder, investor, both]
+   *                 description: Type of contact
+   *                 example: "founder"
+   *               headline:
+   *                 type: string
+   *                 description: Professional headline
+   *                 example: "Building the future of fintech"
+   *               location_city:
+   *                 type: string
+   *                 description: City location
+   *                 example: "San Francisco"
+   *               location_country:
+   *                 type: string
+   *                 description: Country location
+   *                 example: "USA"
+   *               skills:
+   *                 type: array
+   *                 items:
+   *                   type: string
+   *                 description: Array of skills
+   *                 example: ["javascript", "product-management", "fundraising"]
+   *               industries:
+   *                 type: array
+   *                 items:
+   *                   type: string
+   *                 description: Array of industries
+   *                 example: ["fintech", "saas", "b2b"]
+   *               verticals:
+   *                 type: array
+   *                 items:
+   *                   type: string
+   *                 description: Array of verticals
+   *                 example: ["payments", "lending"]
+   *               funding_stages:
+   *                 type: array
+   *                 items:
+   *                   type: string
+   *                 description: Array of funding stages
+   *                 example: ["seed", "series-a"]
+   *               current_company:
+   *                 type: string
+   *                 description: Current company name
+   *                 example: "TechStartup Inc"
+   *               current_role:
+   *                 type: string
+   *                 description: Current role/position
+   *                 example: "CEO & Founder"
+   *               linkedin_url:
+   *                 type: string
+   *                 description: LinkedIn profile URL
+   *                 example: "https://linkedin.com/in/jane-founder"
+   *               email:
+   *                 type: string
+   *                 format: email
+   *                 description: Email address
+   *                 example: "jane@techstartup.com"
+   *           examples:
+   *             founder:
+   *               summary: Founder example
+   *               value:
+   *                 full_name: "Jane Founder"
+   *                 contact_type: "founder"
+   *                 headline: "Building the future of fintech"
+   *                 location_city: "San Francisco"
+   *                 location_country: "USA"
+   *                 skills: ["javascript", "product-management", "fundraising"]
+   *                 industries: ["fintech", "saas"]
+   *                 funding_stages: ["seed", "series-a"]
+   *                 current_company: "TechStartup Inc"
+   *                 current_role: "CEO & Founder"
+   *                 linkedin_url: "https://linkedin.com/in/jane-founder"
+   *                 email: "jane@techstartup.com"
+   *             investor:
+   *               summary: Investor example
+   *               value:
+   *                 full_name: "Bob Investor"
+   *                 contact_type: "investor"
+   *                 headline: "Partner at VentureCapital Fund"
+   *                 location_city: "New York"
+   *                 location_country: "USA"
+   *                 skills: ["due-diligence", "portfolio-management"]
+   *                 industries: ["fintech", "healthcare", "ai"]
+   *                 funding_stages: ["series-a", "series-b"]
+   *                 current_company: "VentureCapital Fund"
+   *                 current_role: "Partner"
+   *                 linkedin_url: "https://linkedin.com/in/bob-investor"
+   *                 email: "bob@vcfund.com"
    *     responses:
    *       201:
    *         description: Contact created successfully
