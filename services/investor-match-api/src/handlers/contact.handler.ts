@@ -518,6 +518,327 @@ export class ContactHandler {
     }
   }
 
+  
+  /**
+   * @swagger
+   * /v1/contacts/filter:
+   *   post:
+   *     summary: Filter contacts by multiple attributes
+   *     tags: [Contacts]
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             properties:
+   *               contact_type:
+   *                 type: string
+   *                 enum: [founder, investor, both]
+   *                 description: Filter by contact type
+   *               skills:
+   *                 type: array
+   *                 items:
+   *                   type: string
+   *                 description: Filter by skills (OR logic)
+   *               industries:
+   *                 type: array
+   *                 items:
+   *                   type: string
+   *                 description: Filter by industries (OR logic)
+   *               verticals:
+   *                 type: array
+   *                 items:
+   *                   type: string
+   *               funding_stages:
+   *                 type: array
+   *                 items:
+   *                   type: string
+   *               location_city:
+   *                 type: string
+   *                 description: Filter by city
+   *               location_country:
+   *                 type: string
+   *                 description: Filter by country
+   *               match_mode:
+   *                 type: string
+   *                 enum: [any, all]
+   *                 default: any
+   *                 description: Match any filter (OR) or all filters (AND)
+   *               limit:
+   *                 type: integer
+   *                 default: 20
+   *                 maximum: 100
+   *           examples:
+   *             fintech_investors:
+   *               summary: Find fintech investors in SF
+   *               value:
+   *                 contact_type: "investor"
+   *                 industries: ["fintech"]
+   *                 location_city: "San Francisco"
+   *                 match_mode: "all"
+   *                 limit: 20
+   *     responses:
+   *       200:
+   *         description: Filtered contacts
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 data:
+   *                   type: array
+   *                   items:
+   *                     $ref: '#/components/schemas/Contact'
+   *                 total:
+   *                   type: integer
+   *                 filters_applied:
+   *                   type: object
+   */
+  async filterContacts(req: Request, res: Response): Promise<void> {
+    try {
+      const {
+        contact_type,
+        skills,
+        industries,
+        verticals,
+        funding_stages,
+        location_city,
+        location_country,
+        match_mode = 'any',
+        limit = 20
+      } = req.body;
+
+      const result = await matchingService.filterContacts({
+        contact_type,
+        skills,
+        industries,
+        verticals,
+        funding_stages,
+        location_city,
+        location_country,
+        match_mode,
+        limit: Math.min(parseInt(limit as string), 100)
+      });
+
+      res.json(result);
+    } catch (error) {
+      console.error('Failed to filter contacts:', error);
+      res.status(500).json({ error: 'Failed to filter contacts' });
+    }
+  }
+
+  /**
+   * @swagger
+   * /v1/contacts/{id}/campaign-matches:
+   *   post:
+   *     summary: Find matches using selective contact attributes (campaign mode)
+   *     tags: [Contacts]
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: string
+   *         description: Contact ID to use as seed
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             properties:
+   *               attributes:
+   *                 type: array
+   *                 items:
+   *                   type: string
+   *                   enum: [skills, industries, verticals, funding_stages, location]
+   *                 description: Which attributes to use for matching
+   *                 example: ["industries", "location"]
+   *               target_type:
+   *                 type: string
+   *                 enum: [founder, investor, both]
+   *                 default: investor
+   *               limit:
+   *                 type: integer
+   *                 default: 20
+   *                 maximum: 100
+   *           examples:
+   *             location_only:
+   *               summary: Match by location only
+   *               value:
+   *                 attributes: ["location"]
+   *                 target_type: "investor"
+   *                 limit: 20
+   *             industry_and_stage:
+   *               summary: Match by industry and funding stage
+   *               value:
+   *                 attributes: ["industries", "funding_stages"]
+   *                 target_type: "investor"
+   *                 limit: 20
+   *             all_attributes:
+   *               summary: Match with all properties
+   *               value:
+   *                 attributes: ["skills", "industries", "verticals", "funding_stages", "location"]
+   *                 target_type: "investor"
+   *                 limit: 20
+   *     responses:
+   *       200:
+   *         description: Campaign matches found
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 candidates:
+   *                   type: array
+   *                   items:
+   *                     type: object
+   *                 totalMatches:
+   *                   type: integer
+   *                 seedContact:
+   *                   $ref: '#/components/schemas/Contact'
+   *                 attributes_used:
+   *                   type: array
+   *                   items:
+   *                     type: string
+   */
+  async campaignMatches(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      
+      // Debug logging
+      console.log('=== CAMPAIGN MATCH DEBUG ===');
+      console.log('Request URL:', req.url);
+      console.log('Request method:', req.method);
+      console.log('Content-Type:', req.headers['content-type']);
+      console.log('Raw body:', req.body);
+      console.log('Body type:', typeof req.body);
+      console.log('Body keys:', Object.keys(req.body || {}));
+      console.log('===========================');
+      
+      const {
+        attributes = [],
+        target_type = 'investor',
+        limit = 20
+      } = req.body || {};
+
+      console.log('Campaign match request body:', req.body);
+      console.log('Extracted attributes:', attributes);
+      console.log('Target type:', target_type);
+
+      // Validate attributes array
+      if (!Array.isArray(attributes)) {
+        res.status(400).json({ 
+          error: 'attributes must be an array',
+          received: typeof attributes,
+          body_received: req.body
+        });
+        return;
+      }
+
+      if (attributes.length === 0) {
+        res.status(400).json({ 
+          error: 'attributes array cannot be empty',
+          valid_attributes: ['skills', 'industries', 'verticals', 'funding_stages', 'location'],
+          body_received: req.body
+        });
+        return;
+      }
+
+      // Validate attributes
+      const validAttributes = ['skills', 'industries', 'verticals', 'funding_stages', 'location'];
+      const invalidAttrs = attributes.filter((a: string) => !validAttributes.includes(a));
+      
+      if (invalidAttrs.length > 0) {
+        res.status(400).json({ 
+          error: `Invalid attributes: ${invalidAttrs.join(', ')}`,
+          valid_attributes: validAttributes
+        });
+        return;
+      }
+
+      const result = await matchingService.campaignMatch(
+        id,
+        attributes,
+        target_type as ContactType,
+        Math.min(parseInt(limit as string), 100)
+      );
+
+      res.json(result);
+    } catch (error: any) {
+      console.error('Failed to perform campaign match:', error);
+      if (error.message.includes('not found')) {
+        res.status(404).json({ error: 'Contact not found' });
+      } else {
+        res.status(500).json({ error: 'Failed to perform campaign match' });
+      }
+    }
+  }
+
+  /**
+   * @swagger
+   * /v1/contacts/{id}/campaign-analysis:
+   *   get:
+   *     summary: Analyze match potential across different attribute combinations
+   *     tags: [Contacts]
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: string
+   *       - in: query
+   *         name: target_type
+   *         schema:
+   *           type: string
+   *           enum: [founder, investor, both]
+   *           default: investor
+   *     responses:
+   *       200:
+   *         description: Analysis of match potential by attribute combination
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 contact:
+   *                   $ref: '#/components/schemas/Contact'
+   *                 combinations:
+   *                   type: array
+   *                   items:
+   *                     type: object
+   *                     properties:
+   *                       attributes:
+   *                         type: array
+   *                         items:
+   *                           type: string
+   *                       match_count:
+   *                         type: integer
+   *                       description:
+   *                         type: string
+   */
+  async analyzeCampaign(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      const { target_type = 'investor' } = req.query;
+
+      const analysis = await matchingService.analyzeCampaignPotential(
+        id,
+        target_type as ContactType
+      );
+
+      res.json(analysis);
+    } catch (error: any) {
+      console.error('Failed to analyze campaign:', error);
+      if (error.message.includes('not found')) {
+        res.status(404).json({ error: 'Contact not found' });
+      } else {
+        res.status(500).json({ error: 'Failed to analyze campaign' });
+      }
+    }
+  }
+
   /**
    * @swagger
    * /v1/contacts/{id}/matches:
@@ -562,6 +883,7 @@ export class ContactHandler {
    *             schema:
    *               $ref: '#/components/schemas/Error'
    */
+
   async matchContacts(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
@@ -590,6 +912,7 @@ export class ContactHandler {
       );
       
       res.json(matchResult);
+
     } catch (error: any) {
       console.error('Failed to match contacts:', error);
       if (error.message.includes('not found')) {
@@ -598,5 +921,5 @@ export class ContactHandler {
         res.status(500).json({ error: 'Failed to match contacts' });
       }
     }
-  }
+  } 
 }

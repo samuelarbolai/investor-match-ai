@@ -147,6 +147,30 @@ v1Router.post('/contacts',
   contactHandler.createContact.bind(contactHandler)
 );
 
+// NEW: Table filtering endpoint
+v1Router.post('/contacts/filter',
+  contactHandler.filterContacts.bind(contactHandler)
+);
+
+// Matching endpoint
+v1Router.get('/contacts/:id/matches', 
+  validate(contactIdSchema, 'params'),
+  validate(matchQuerySchema, 'query'),
+  contactHandler.matchContacts.bind(contactHandler)
+);
+
+// NEW: Campaign-style matching with selective attributes
+v1Router.post('/contacts/:id/campaign-matches',
+  validate(contactIdSchema, 'params'),
+  contactHandler.campaignMatches.bind(contactHandler)
+);
+
+// NEW: Analyze campaign potential across attribute combinations
+v1Router.get('/contacts/:id/campaign-analysis',
+  validate(contactIdSchema, 'params'),
+  contactHandler.analyzeCampaign.bind(contactHandler)
+);
+
 v1Router.get('/contacts/:id', 
   validate(contactIdSchema, 'params'),
   contactHandler.getContact.bind(contactHandler)
@@ -163,13 +187,6 @@ v1Router.delete('/contacts/:id',
   contactHandler.deleteContact.bind(contactHandler)
 );
 
-// Matching endpoint
-v1Router.get('/contacts/:id/matches', 
-  validate(contactIdSchema, 'params'),
-  validate(matchQuerySchema, 'query'),
-  contactHandler.matchContacts.bind(contactHandler)
-);
-
 // Mount v1 router
 app.use('/v1', v1Router);
 
@@ -178,6 +195,21 @@ app.post('/contacts',
   validate(createContactSchema, 'body'),
   contactHandler.createContact.bind(contactHandler)
 );
+
+app.post('/contacts/filter',
+  contactHandler.filterContacts.bind(contactHandler)
+);
+
+app.post('/contacts/:id/campaign-matches',
+  validate(contactIdSchema, 'params'),
+  contactHandler.campaignMatches.bind(contactHandler)
+);
+
+app.get('/contacts/:id/campaign-analysis',
+  validate(contactIdSchema, 'params'),
+  contactHandler.analyzeCampaign.bind(contactHandler)
+);
+
 app.get('/contacts/:id', contactHandler.getContact.bind(contactHandler));
 app.patch('/contacts/:id', contactHandler.updateContact.bind(contactHandler));
 app.delete('/contacts/:id', contactHandler.deleteContact.bind(contactHandler));
