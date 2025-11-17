@@ -71,6 +71,7 @@ POST   /v1/contacts           # Create new contact
 GET    /v1/contacts/:id       # Get contact by ID
 PATCH  /v1/contacts/:id       # Update contact
 DELETE /v1/contacts/:id       # Delete contact (optional)
+POST   /v1/contacts/filter    # Filter contacts by attributes + stage_count_filters
 ```
 
 ### Matching
@@ -84,6 +85,7 @@ POST   /v1/introductions/stage                 # Create/update a stage for a tar
 GET    /v1/introductions/stage?ownerId=...     # List pipeline contacts, optionally filter by stage
 GET    /v1/introductions/stage/summary?ownerId=... # Aggregate counts per stage (dashboards/monitoring)
 POST   /v1/introductions/stages/bulk-update    # Bulk move contacts across stages
+POST   /v1/introductions/stage/recompute       # Rebuild a contact's cached stage_counts (ownerId body param)
 ```
 
 - `stage` supports: `prospect`, `lead`, `to-meet`, `met`, `not-in-campaign`, `disqualified`
@@ -95,6 +97,10 @@ POST   /v1/introductions/stages/bulk-update    # Bulk move contacts across stage
 GET    /health                # Health check
 GET    /api-docs              # Swagger documentation
 ```
+
+### Postman Collections
+- `postman/investor-match-api.postman_collection.json` – full REST coverage (contacts, matching, introductions, system, legacy routes)
+- `postman/investor-match-introductions.postman_collection.json` – focused set for the introductions workflow
 
 ### Example Request
 ```bash
@@ -306,6 +312,7 @@ npm run test:ci             # CI-optimized test run
 - **Cloud Monitoring:** Performance metrics and dashboards
 - **Error Tracking:** Automatic error alerting
 - **Health Checks:** `/health` endpoint monitoring
+- **Docs**: See `docs/monitoring/README.md` for dashboard JSON, log queries, and alert policy templates covering introductions metrics.
 
 ### Key Metrics
 - **Response Time:** 95th percentile <2s

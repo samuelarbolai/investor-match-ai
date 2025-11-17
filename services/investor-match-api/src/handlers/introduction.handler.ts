@@ -171,4 +171,52 @@ export class IntroductionHandler {
       next(error);
     }
   }
+
+  /**
+   * @swagger
+   * /v1/introductions/stage/recompute:
+   *   post:
+   *     summary: Recalculate stage counts for an owner and update the contact cache
+   *     tags: [Introductions]
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             properties:
+   *               ownerId:
+   *                 type: string
+   *                 example: contact-123
+   *     responses:
+   *       200:
+   *         description: Updated stage counts
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 ownerId:
+   *                   type: string
+   *                 stage_counts:
+   *                   type: object
+   *                   additionalProperties:
+   *                     type: integer
+   *       400:
+   *         description: Validation error
+   *       404:
+   *         description: Owner contact not found
+   */
+  async recomputeStageCounts(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { ownerId } = req.body;
+      const stageCounts = await introductionService.recalculateStageCounts(ownerId);
+      res.status(200).json({
+        ownerId,
+        stage_counts: stageCounts,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 }

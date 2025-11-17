@@ -18,6 +18,7 @@ import {
   getContactsInStageSchema,
   bulkSetStageSchema,
   getStageSummarySchema,
+  recomputeStageCountsSchema,
 } from './validators/introduction.validator';
 import { specs, swaggerUi } from './config/swagger';
 
@@ -215,6 +216,11 @@ v1Router.post('/introductions/stages/bulk-update',
 v1Router.get('/introductions/stage/summary',
   validate(getStageSummarySchema, 'query'),
   introductionHandler.getStageSummary.bind(introductionHandler)
+);
+
+v1Router.post('/introductions/stage/recompute',
+  validate(recomputeStageCountsSchema, 'body'),
+  introductionHandler.recomputeStageCounts.bind(introductionHandler)
 );
 
 // Mount v1 router

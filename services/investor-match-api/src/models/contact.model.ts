@@ -1,5 +1,6 @@
 import { Timestamp } from 'firebase-admin/firestore';
 import { Experience } from './experience.model';
+import { IntroStage } from './introduction.model';
 
 /**
  * Contact type enum - founder, investor, or both
@@ -112,9 +113,14 @@ export interface Contact {
   
   /** Document last update timestamp */
   updated_at: Timestamp;
+
+  /** Cached counts of introductions per stage where this contact is the owner */
+  stage_counts?: StageCounts;
 }
 
 /**
  * Contact input type for API requests (excludes auto-generated fields)
  */
 export type ContactInput = Omit<Contact, 'id' | 'created_at' | 'updated_at'>;
+
+export type StageCounts = Record<IntroStage, number>;

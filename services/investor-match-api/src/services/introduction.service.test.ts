@@ -1,6 +1,20 @@
 import { introductionService } from './introduction.service';
 import { collections, db } from '../config/firebase';
-import { IntroStage } from '../models/introduction.model';
+import { IntroStage, INTRO_STAGES } from '../models/introduction.model';
+import { metricsService } from '../observability/metrics.service';
+
+const contactDoc = {
+  id: 'owner1',
+  get: jest.fn().mockResolvedValue({ exists: true }),
+  set: jest.fn().mockResolvedValue(undefined),
+};
+
+const buildStageCounts = (overrides: Partial<Record<IntroStage, number>> = {}) => {
+  return INTRO_STAGES.reduce((acc, stage) => {
+    acc[stage] = overrides[stage] ?? 0;
+    return acc;
+  }, {} as Record<IntroStage, number>);
+};
 
 jest.mock('../config/firebase', () => {
   const batch = {
@@ -9,18 +23,45 @@ jest.mock('../config/firebase', () => {
     commit: jest.fn().mockResolvedValue(undefined),
   };
 
+  const transaction = {
+    get: jest.fn().mockResolvedValue({
+      exists: true,
+      get: jest.fn().mockReturnValue(undefined),
+    }),
+    update: jest.fn(),
+  };
+
   return {
     db: {
       batch: jest.fn(() => batch),
       getAll: jest.fn(),
+      runTransaction: jest.fn((fn: any) => fn(transaction)),
+      __transactionMock: transaction,
     },
     collections: {
       introductions: jest.fn(),
+      contacts: jest.fn(() => ({
+        doc: jest.fn(() => contactDoc),
+      })),
     },
   };
 });
 
+jest.mock('../observability/metrics.service', () => {
+  const increment = jest.fn();
+  const recordDuration = jest.fn();
+  const time = jest.fn((_name: string, _labels: Record<string, unknown>, fn: any) => fn());
+  return { metricsService: { increment, recordDuration, time } };
+});
+
 describe('IntroductionService', () => {
+  beforeEach(() => {
+    ((collections.contacts) as jest.Mock).mockReturnValue({
+      doc: jest.fn(() => contactDoc),
+    });
+    contactDoc.set.mockClear();
+  });
+
   afterEach(() => {
     jest.clearAllMocks();
   });
@@ -30,6 +71,9 @@ describe('IntroductionService', () => {
       const ownerId = 'owner1';
       const targetId = 'target1';
       const stage: IntroStage = 'prospect';
+      const recalcSpy = jest
+        .spyOn(introductionService, 'recalculateStageCounts')
+        .mockResolvedValue(buildStageCounts({ prospect: 1 }));
       const docRef = {
         id: `${ownerId}__${targetId}`,
         get: jest.fn().mockResolvedValue({ exists: false }),
@@ -51,12 +95,34 @@ describe('IntroductionService', () => {
       expect(result.targetId).toBe(targetId);
       expect(result.stage).toBe(stage);
       expect(result.id).toBe(`${ownerId}__${targetId}`);
+      expect((db.runTransaction as jest.Mock)).toHaveBeenCalled();
+      expect(recalcSpy).toHaveBeenCalledWith(ownerId);
+      recalcSpy.mockRestore();
+      const transaction = (db as any).__transactionMock;
+      expect(transaction.update).toHaveBeenCalled();
+      const stagePayload = transaction.update.mock.calls[0][1];
+      expect(stagePayload.stage_counts.prospect).toBe(1);
+
+      const metricsMock = metricsService as jest.Mocked<typeof metricsService>;
+      expect(metricsMock.time).toHaveBeenCalledWith(
+        'introductions.set_stage.duration',
+        { ownerId },
+        expect.any(Function)
+      );
+      expect(metricsMock.increment).toHaveBeenCalledWith(
+        'introductions.stage_change',
+        1,
+        expect.objectContaining({ ownerId, stage, action: 'create' })
+      );
     });
 
     it('should update an existing introduction if one exists', async () => {
       const ownerId = 'owner1';
       const targetId = 'target1';
       const stage: IntroStage = 'lead';
+      const recalcSpy = jest
+        .spyOn(introductionService, 'recalculateStageCounts')
+        .mockResolvedValue(buildStageCounts({ lead: 1 }));
       const existingDoc = {
         id: `${ownerId}__${targetId}`,
         get: jest.fn().mockResolvedValue({ exists: true, data: () => ({ ownerId, targetId, stage: 'prospect' }) }),
@@ -74,6 +140,16 @@ describe('IntroductionService', () => {
 
       expect(existingDoc.update).toHaveBeenCalledWith(expect.objectContaining({ stage }));
       expect(result.stage).toBe(stage);
+      expect((db.runTransaction as jest.Mock)).toHaveBeenCalled();
+      expect(recalcSpy).toHaveBeenCalledWith(ownerId);
+      recalcSpy.mockRestore();
+
+      const metricsMock = metricsService as jest.Mocked<typeof metricsService>;
+      expect(metricsMock.increment).toHaveBeenCalledWith(
+        'introductions.stage_change',
+        1,
+        expect.objectContaining({ ownerId, stage, action: 'update' })
+      );
     });
   });
 
@@ -130,6 +206,9 @@ describe('IntroductionService', () => {
         { targetId: 'target1', stage: 'lead' as IntroStage }, // Will be an update
         { targetId: 'target2', stage: 'prospect' as IntroStage }, // Will be a new creation
       ];
+      const recalcSpy = jest
+        .spyOn(introductionService, 'recalculateStageCounts')
+        .mockResolvedValue(buildStageCounts({ lead: 1, prospect: 1 }));
 
       const existingDocRef = {
         id: `${ownerId}__target1`,
@@ -149,7 +228,7 @@ describe('IntroductionService', () => {
       });
 
       (db.getAll as jest.Mock).mockResolvedValue([
-        { id: existingDocRef.id, exists: true },
+        { id: existingDocRef.id, exists: true, data: () => ({ stage: 'prospect' }) },
         { id: newDocRef.id, exists: false },
       ]);
 
@@ -160,6 +239,21 @@ describe('IntroductionService', () => {
       expect(batch.update).toHaveBeenCalledTimes(1);
       expect(batch.set).toHaveBeenCalledTimes(1);
       expect(batch.commit).toHaveBeenCalledTimes(1);
+      expect((db.runTransaction as jest.Mock)).toHaveBeenCalled();
+      expect(recalcSpy).toHaveBeenCalledWith(ownerId);
+      recalcSpy.mockRestore();
+
+      const metricsMock = metricsService as jest.Mocked<typeof metricsService>;
+      expect(metricsMock.time).toHaveBeenCalledWith(
+        'introductions.bulk_set_stage.duration',
+        { ownerId, updates: updates.length },
+        expect.any(Function)
+      );
+      expect(metricsMock.increment).toHaveBeenCalledWith(
+        'introductions.bulk_set_stage',
+        updates.length,
+        expect.objectContaining({ ownerId })
+      );
     });
   });
 
@@ -186,6 +280,45 @@ describe('IntroductionService', () => {
 
       expect(lead?.count).toBe(2);
       expect(disqualified?.count).toBe(0);
+    });
+  });
+
+  describe('recalculateStageCounts', () => {
+    it('should recompute counts and persist them', async () => {
+      const ownerId = 'owner-recalc';
+      const mockDocs = [
+        { data: () => ({ ownerId, targetId: 'a', stage: 'lead' as IntroStage }) },
+        { data: () => ({ ownerId, targetId: 'b', stage: 'lead' as IntroStage }) },
+        { data: () => ({ ownerId, targetId: 'c', stage: 'prospect' as IntroStage }) },
+      ];
+
+      ((collections.introductions) as jest.Mock).mockReturnValue({
+        where: jest.fn().mockReturnThis(),
+        get: jest.fn().mockResolvedValue({ docs: mockDocs }),
+        doc: jest.fn(),
+      });
+
+      const contactRef = {
+        get: jest.fn().mockResolvedValue({ exists: true }),
+        set: jest.fn().mockResolvedValue(undefined),
+      };
+      ((collections.contacts) as jest.Mock).mockReturnValue({
+        doc: jest.fn().mockReturnValue(contactRef),
+      });
+
+      const counts = await introductionService.recalculateStageCounts(ownerId);
+
+      expect(contactRef.set).toHaveBeenCalledWith(
+        {
+          stage_counts: expect.objectContaining({
+            lead: 2,
+            prospect: 1,
+          }),
+        },
+        { merge: true }
+      );
+      expect(counts.lead).toBe(2);
+      expect(counts.prospect).toBe(1);
     });
   });
 });

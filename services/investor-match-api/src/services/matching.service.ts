@@ -1,5 +1,6 @@
 import { collections } from '../config/firebase';
-import { Contact, ContactType } from '../models/contact.model';
+import { Contact, ContactType, StageCounts } from '../models/contact.model';
+import { IntroStage, INTRO_STAGES } from '../models/introduction.model';
 import { REVERSE_INDEX_MAPPING, REVERSE_INDEX_FIELDS } from '../config/reverse-index-mapping';
 
 export interface MatchResult {
@@ -31,6 +32,7 @@ export interface FilterCriteria {
   location_country?: string;
   match_mode?: 'any' | 'all';
   limit?: number;
+  stage_count_filters?: StageCountFilters;
 }
 
 export interface FilterResult {
@@ -47,6 +49,13 @@ export interface CampaignAnalysis {
     description: string;
   }[];
 }
+
+interface StageCountRange {
+  min?: number;
+  max?: number;
+}
+
+type StageCountFilters = Partial<Record<IntroStage, StageCountRange>>;
 
 export class MatchingService {
   
@@ -65,7 +74,8 @@ export class MatchingService {
       location_city,
       location_country,
       match_mode = 'any',
-      limit = 20
+      limit = 20,
+      stage_count_filters
     } = criteria;
 
     // Collect candidate contact IDs from reverse indexes
@@ -163,6 +173,10 @@ export class MatchingService {
           
           if (!matchesAll) continue;
         }
+
+        if (!this.matchesStageCountFilters(contact.stage_counts, stage_count_filters)) {
+          continue;
+        }
         
         filteredContacts.push(contact);
       } catch (error) {
@@ -177,6 +191,34 @@ export class MatchingService {
       total: filteredContacts.length,
       filters_applied: criteria
     };
+  }
+
+  private matchesStageCountFilters(
+    counts: StageCounts | undefined,
+    filters?: StageCountFilters
+  ): boolean {
+    if (!filters) {
+      return true;
+    }
+
+    const normalized: StageCounts = INTRO_STAGES.reduce((acc, stage) => {
+      acc[stage] = counts?.[stage] ?? 0;
+      return acc;
+    }, {} as StageCounts);
+
+    return Object.entries(filters).every(([stage, range]) => {
+      if (!range) {
+        return true;
+      }
+      const value = normalized[stage as IntroStage] ?? 0;
+      if (typeof range.min === 'number' && value < range.min) {
+        return false;
+      }
+      if (typeof range.max === 'number' && value > range.max) {
+        return false;
+      }
+      return true;
+    });
   }
 
   /**

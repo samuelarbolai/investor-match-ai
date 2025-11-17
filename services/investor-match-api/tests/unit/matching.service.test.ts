@@ -4,10 +4,16 @@ import { Contact, ContactType } from '../../src/models/contact.model';
 // Mock Firebase collections - Proper way
 const mockGet = jest.fn();
 const mockDoc = jest.fn(() => ({ get: mockGet }));
+const mockWhere = jest.fn(() => ({ get: mockGet }));
+const mockLimit = jest.fn(() => ({ get: mockGet }));
 
 jest.mock('../../src/config/firebase', () => ({
   collections: {
-    contacts: () => ({ doc: mockDoc }),
+    contacts: () => ({
+      doc: mockDoc,
+      where: mockWhere,
+      limit: mockLimit,
+    }),
     skills: () => ({ doc: mockDoc }),
     industries: () => ({ doc: mockDoc }),
     verticals: () => ({ doc: mockDoc }),
@@ -104,11 +110,21 @@ describe('MatchingService', () => {
             contact_ids: ['investor123']
           })
         })
-        // Mock candidate contact retrieval
+        // Snapshot for fallback (no array filters) - not used here
+        .mockResolvedValueOnce({
+          docs: [{ id: 'investor123' }],
+        })
+        // Candidate contact
         .mockResolvedValueOnce({
           exists: true,
           data: () => mockInvestorContact
         });
+
+      mockWhere.mockReturnValue({
+        get: jest.fn().mockResolvedValue({
+          docs: [{ id: 'investor123', data: () => mockInvestorContact }],
+        }),
+      });
 
       const result = await matchingService.matchContact('seed123', 'investor', 5);
 

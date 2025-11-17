@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import { metricsService } from '../observability/metrics.service';
 
 /**
  * Request logging middleware
@@ -25,6 +26,16 @@ export function requestLogger(req: Request, res: Response, next: NextFunction): 
       responseSize: JSON.stringify(body).length
     });
     
+    const labels = {
+      path: req.path,
+      method: req.method,
+      status: res.statusCode,
+    };
+    metricsService.increment('api.request.count', 1, labels);
+    metricsService.recordDuration('api.request.duration', duration, labels);
+    if (res.statusCode >= 500) {
+      metricsService.increment('api.request.errors', 1, labels);
+    }
     return originalJson.call(this, body);
   };
 
@@ -48,6 +59,11 @@ export function performanceLogger(req: Request, res: Response, next: NextFunctio
         duration: `${duration.toFixed(2)}ms`,
         statusCode: res.statusCode,
         timestamp: new Date().toISOString()
+      });
+      metricsService.increment('api.request.slow', 1, {
+        path: req.path,
+        method: req.method,
+        status: res.statusCode,
       });
     }
   });

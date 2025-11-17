@@ -569,6 +569,16 @@ export class ContactHandler {
    *                 type: integer
    *                 default: 20
    *                 maximum: 100
+   *               stage_count_filters:
+   *                 type: object
+   *                 additionalProperties:
+   *                   type: object
+   *                   properties:
+   *                     min:
+   *                       type: integer
+   *                     max:
+   *                       type: integer
+   *                 description: Numeric filters for introduction stage counts per contact (keys: prospect, lead, to-meet, met, not-in-campaign, disqualified)
    *           examples:
    *             fintech_investors:
    *               summary: Find fintech investors in SF
@@ -606,7 +616,8 @@ export class ContactHandler {
         location_city,
         location_country,
         match_mode = 'any',
-        limit = 20
+        limit = 20,
+        stage_count_filters,
       } = req.body;
 
       const result = await matchingService.filterContacts({
@@ -618,7 +629,8 @@ export class ContactHandler {
         location_city,
         location_country,
         match_mode,
-        limit: Math.min(parseInt(limit as string), 100)
+        limit: Math.min(parseInt(limit as string, 10), 100),
+        stage_count_filters,
       });
 
       res.json(result);

@@ -1,0 +1,334 @@
+{
+  "info": {
+    "name": "Investor Match API – Full",
+    "description": "Complete REST surface for investor-match-api, covering contacts, matching, introductions, and system diagnostics.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Contacts (v1)",
+      "item": [
+        {
+          "name": "Create Contact",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"full_name\": \"Alicia Founder\",\n  \"contact_type\": \"founder\",\n  \"headline\": \"Building embedded fintech rails\",\n  \"email\": \"alicia@example.com\",\n  \"location_country\": \"USA\",\n  \"location_city\": \"New York\",\n  \"skills\": [\"javascript\", \"product_management\"],\n  \"industries\": [\"fintech\", \"saas\"],\n  \"verticals\": [\"b2b\"],\n  \"funding_stages\": [\"seed\"],\n  \"job_to_be_done\": [\"fundraising\"],\n  \"roles\": [\"ceo\"],\n  \"experiences\": [\n    {\n      \"company\": \"FinTech Labs\",\n      \"role\": \"CEO\",\n      \"start_year\": 2022,\n      \"end_year\": null\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/contacts",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "contacts"]
+            }
+          }
+        },
+        {
+          "name": "Get Contact",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/v1/contacts/{{contactId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "contacts", "{{contactId}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Contact",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"headline\": \"Now leading GTM at FinTech Labs\",\n  \"skills\": [\"javascript\", \"product_management\", \"sales\"]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/contacts/{{contactId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "contacts", "{{contactId}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Contact",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/v1/contacts/{{contactId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "contacts", "{{contactId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Contact Queries & Insights",
+      "item": [
+        {
+          "name": "Filter Contacts",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contact_type\": \"investor\",\n  \"industries\": [\"fintech\"],\n  \"skills\": [\"product_management\"],\n  \"match_mode\": \"any\",\n  \"limit\": 25\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/contacts/filter",
+              "host": ["{{baseUrl}}"],
+              "path": ["contacts", "filter"]
+            }
+          }
+        },
+        {
+          "name": "Contact Matches (v1)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/v1/contacts/{{contactId}}/matches?type={{matchType}}&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "contacts", "{{contactId}}", "matches"],
+              "query": [
+                { "key": "type", "value": "{{matchType}}" },
+                { "key": "limit", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Campaign Analysis (legacy)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/contacts/{{contactId}}/campaign-analysis",
+              "host": ["{{baseUrl}}"],
+              "path": ["contacts", "{{contactId}}", "campaign-analysis"],
+              "query": [
+                { "key": "target_type", "value": "{{matchType}}", "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Campaign Matches (legacy)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"target_type\": \"investor\",\n  \"limit\": 10\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/contacts/{{contactId}}/campaign-matches",
+              "host": ["{{baseUrl}}"],
+              "path": ["contacts", "{{contactId}}", "campaign-matches"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Introductions",
+      "item": [
+        {
+          "name": "Set Contact Stage",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ownerId\": \"{{ownerId}}\",\n  \"targetId\": \"{{targetId}}\",\n  \"stage\": \"prospect\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/introductions/stage",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "introductions", "stage"]
+            }
+          }
+        },
+        {
+          "name": "List Introductions",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/v1/introductions/stage?ownerId={{ownerId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "introductions", "stage"],
+              "query": [
+                { "key": "ownerId", "value": "{{ownerId}}" },
+                { "key": "stage", "value": "prospect", "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Bulk Update Stages",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ownerId\": \"{{ownerId}}\",\n  \"updates\": [\n    { \"targetId\": \"{{targetId}}\", \"stage\": \"lead\" },\n    { \"targetId\": \"contact-789\", \"stage\": \"met\" }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/introductions/stages/bulk-update",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "introductions", "stages", "bulk-update"]
+            }
+          }
+        },
+        {
+          "name": "Stage Summary",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/v1/introductions/stage/summary?ownerId={{ownerId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "introductions", "stage", "summary"],
+              "query": [
+                { "key": "ownerId", "value": "{{ownerId}}" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "System",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["health"]
+            }
+          }
+        },
+        {
+          "name": "Firestore Connectivity Test",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/test-firestore",
+              "host": ["{{baseUrl}}"],
+              "path": ["test-firestore"]
+            }
+          }
+        },
+        {
+          "name": "Swagger Docs",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api-docs",
+              "host": ["{{baseUrl}}"],
+              "path": ["api-docs"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Legacy Contact CRUD",
+      "item": [
+        {
+          "name": "Legacy Create Contact",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"full_name\": \"Legacy Founder\",\n  \"contact_type\": \"founder\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/contacts",
+              "host": ["{{baseUrl}}"],
+              "path": ["contacts"]
+            }
+          }
+        },
+        {
+          "name": "Legacy Get Contact",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/contacts/{{contactId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["contacts", "{{contactId}}"]
+            }
+          }
+        },
+        {
+          "name": "Legacy Update Contact",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"headline\": \"Legacy contact update\" }"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/contacts/{{contactId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["contacts", "{{contactId}}"]
+            }
+          }
+        },
+        {
+          "name": "Legacy Delete Contact",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/contacts/{{contactId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["contacts", "{{contactId}}"]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    { "key": "baseUrl", "value": "https://investor-match-api-23715448976.us-east1.run.app" },
+    { "key": "contactId", "value": "contact-123" },
+    { "key": "ownerId", "value": "contact-owner" },
+    { "key": "targetId", "value": "contact-456" },
+    { "key": "matchType", "value": "investor" }
+  ]
+}

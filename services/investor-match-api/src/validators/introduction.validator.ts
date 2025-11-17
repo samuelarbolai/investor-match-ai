@@ -27,3 +27,7 @@ export const bulkSetStageSchema = Joi.object({
 export const getStageSummarySchema = Joi.object({
   ownerId: Joi.string().required(),
 });
+
+export const recomputeStageCountsSchema = Joi.object({
+  ownerId: Joi.string().required(),
+});

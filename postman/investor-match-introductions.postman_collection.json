@@ -1,0 +1,146 @@
+{
+  "info": {
+    "name": "Investor Match API – Introductions",
+    "description": "Collection covering the introductions endpoints used by the unified Campaign & Matches manager.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Set Contact Stage",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "accept",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"ownerId\": \"{{ownerId}}\",\n  \"targetId\": \"contact-123\",\n  \"stage\": \"prospect\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/introductions/stage",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "introductions",
+            "stage"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "List Introductions",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/introductions/stage?ownerId={{ownerId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "introductions",
+            "stage"
+          ],
+          "query": [
+            {
+              "key": "ownerId",
+              "value": "{{ownerId}}"
+            },
+            {
+              "key": "stage",
+              "value": "prospect",
+              "disabled": true
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Bulk Update Stages",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "accept",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"ownerId\": \"{{ownerId}}\",\n  \"updates\": [\n    { \"targetId\": \"contact-123\", \"stage\": \"lead\" },\n    { \"targetId\": \"contact-456\", \"stage\": \"met\" }\n  ]\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/introductions/stages/bulk-update",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "introductions",
+            "stages",
+            "bulk-update"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Stage Summary",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/introductions/stage/summary?ownerId={{ownerId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "introductions",
+            "stage",
+            "summary"
+          ],
+          "query": [
+            {
+              "key": "ownerId",
+              "value": "{{ownerId}}"
+            }
+          ]
+        }
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://investor-match-api-23715448976.us-east1.run.app/v1"
+    },
+    {
+      "key": "ownerId",
+      "value": "contact-abc"
+    }
+  ]
+}
