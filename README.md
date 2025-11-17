@@ -78,6 +78,18 @@ DELETE /v1/contacts/:id       # Delete contact (optional)
 GET    /v1/contacts/:id/matches?type=investor&limit=20  # Find matches
 ```
 
+### Introduction Workflow
+```http
+POST   /v1/introductions/stage                 # Create/update a stage for a target contact
+GET    /v1/introductions/stage?ownerId=...     # List pipeline contacts, optionally filter by stage
+GET    /v1/introductions/stage/summary?ownerId=... # Aggregate counts per stage (dashboards/monitoring)
+POST   /v1/introductions/stages/bulk-update    # Bulk move contacts across stages
+```
+
+- `stage` supports: `prospect`, `lead`, `to-meet`, `met`, `not-in-campaign`, `disqualified`
+- Documents are stored as `introductions/{ownerId__targetId}` ensuring unique pairs per pipeline owner
+- Stage mutations emit structured logs (`[Introductions] ...`) for monitoring and auditing
+
 ### System
 ```http
 GET    /health                # Health check
@@ -191,6 +203,24 @@ FIRESTORE_EMULATOR_HOST=localhost:8080  # For integration tests
 4. Download the service account JSON key
 5. Set `GOOGLE_APPLICATION_CREDENTIALS` to the key file path
 
+### Firestore Indexes
+> Required for the introduction workflow before deploying to production.
+
+```bash
+# Composite index for ownerId + stage filtering
+gcloud firestore indexes composite create \
+  --collection-group=introductions \
+  --field-config field-path=ownerId,order=ASC \
+  --field-config field-path=stage,order=ASC
+
+# (Optional) ownerId + targetId index for analytics dashboards
+gcloud firestore indexes composite create \
+  --collection-group=introductions \
+  --field-config field-path=ownerId,order=ASC \
+  --field-config field-path=targetId,order=ASC
+```
+Firestore will surface a link in the console if additional indexes are required (e.g., filtering by more fields).
+
 ## 🚀 Deployment
 
 ### Automatic Deployment (Recommended)
@@ -251,6 +281,7 @@ npm run test:integration
 - End-to-end API testing
 - Firestore emulator
 - Real workflow validation
+- For introduction HTTP routes, set `RUN_INTRO_API_TESTS=true` before running Jest
 
 #### Load Tests
 ```bash

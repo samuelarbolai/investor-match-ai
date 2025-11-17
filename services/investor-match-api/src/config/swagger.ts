@@ -86,6 +86,55 @@ const options = {
             error: { type: 'string', description: 'Error message' },
             details: { type: 'object', description: 'Additional error details' }
           }
+        },
+        Introduction: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', description: 'Unique introduction identifier (ownerId__targetId)' },
+            ownerId: { type: 'string', description: 'Contact ID that owns the pipeline' },
+            targetId: { type: 'string', description: 'Contact ID added to the pipeline' },
+            stage: {
+              type: 'string',
+              description: 'Pipeline stage for the target contact',
+              enum: ['prospect', 'lead', 'to-meet', 'met', 'not-in-campaign', 'disqualified']
+            },
+            createdAt: { type: 'string', format: 'date-time' },
+            updatedAt: { type: 'string', format: 'date-time' }
+          }
+        },
+        IntroductionStageUpdate: {
+          type: 'object',
+          required: ['ownerId', 'targetId', 'stage'],
+          properties: {
+            ownerId: { type: 'string' },
+            targetId: { type: 'string' },
+            stage: {
+              type: 'string',
+              enum: ['prospect', 'lead', 'to-meet', 'met', 'not-in-campaign', 'disqualified']
+            }
+          }
+        },
+        IntroductionBulkStageUpdate: {
+          type: 'object',
+          required: ['ownerId', 'updates'],
+          properties: {
+            ownerId: { type: 'string' },
+            updates: {
+              type: 'array',
+              minItems: 1,
+              items: {
+                type: 'object',
+                required: ['targetId', 'stage'],
+                properties: {
+                  targetId: { type: 'string' },
+                  stage: {
+                    type: 'string',
+                    enum: ['prospect', 'lead', 'to-meet', 'met', 'not-in-campaign', 'disqualified']
+                  }
+                }
+              }
+            }
+          }
         }
       }
     }

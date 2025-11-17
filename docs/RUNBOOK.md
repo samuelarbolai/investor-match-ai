@@ -256,6 +256,36 @@ cd services/investor-match-api
 npm run rebuild-reverse-indexes
 ```
 
+### Introduction Pipeline Operations
+- **Collection:** `introductions`
+- **Document ID format:** `{ownerId}__{targetId}` (ensures one record per pipeline owner/target pair)
+- **Stages:** `prospect`, `lead`, `to-meet`, `met`, `not-in-campaign`, `disqualified`
+
+#### Create or Update a Stage Manually
+```bash
+gcloud firestore documents create "introductions/OWNER__TARGET" \
+  --document='{"ownerId":"OWNER","targetId":"TARGET","stage":"lead","createdAt":'"'"$(date -u +"%Y-%m-%dT%H:%M:%SZ")"'"'"}'
+
+# or update existing stage
+gcloud firestore documents update "introductions/OWNER__TARGET" \
+  stage=met \
+  updatedAt="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+```
+
+#### Required Composite Indexes
+1. `ownerId ASC, stage ASC` – needed for `/v1/introductions/stage?stage=...`
+2. `ownerId ASC, targetId ASC` – improves analytics/deduplication queries
+
+Create via CLI (must run from a machine with gcloud configured):
+```bash
+gcloud firestore indexes composite create \
+  --collection-group=introductions \
+  --field-config field-path=ownerId,order=ASC \
+  --field-config field-path=stage,order=ASC
+```
+
+Firestore will emit an error with a direct console link if additional indexes are required.
+
 ## ⚡ Performance Optimization
 
 ### Monitoring Performance

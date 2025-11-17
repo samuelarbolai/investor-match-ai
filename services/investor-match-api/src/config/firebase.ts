@@ -22,10 +22,12 @@ export { admin };
 
 /**
  * Collection reference helpers
- * Provides typed access to all Firestore collections
+ * Provides typed access to all Firestore collections.
+ * NOTE: Keep this map in sync with src/config/firestore-collections.ts to avoid drift.
  */
 export const collections = {
   contacts: () => db.collection(COLLECTIONS.CONTACTS),
+  introductions: () => db.collection(COLLECTIONS.INTRODUCTIONS),
   jobToBeDone: () => db.collection(COLLECTIONS.JOB_TO_BE_DONE),
   skills: () => db.collection(COLLECTIONS.SKILLS),
   industries: () => db.collection(COLLECTIONS.INDUSTRIES),

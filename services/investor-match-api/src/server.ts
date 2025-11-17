@@ -12,15 +12,24 @@ import {
   matchQuerySchema, 
   contactIdSchema 
 } from './validators/contact.validator';
+import { IntroductionHandler } from './handlers/introduction.handler';
+import { 
+  setStageSchema, 
+  getContactsInStageSchema,
+  bulkSetStageSchema,
+  getStageSummarySchema,
+} from './validators/introduction.validator';
 import { specs, swaggerUi } from './config/swagger';
 
 const app = express();
 const contactHandler = new ContactHandler();
+const introductionHandler = new IntroductionHandler();
 
 // Security and parsing middleware
 app.use(helmet());
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
+
 
 // Logging middleware
 app.use(requestLogger);
@@ -187,6 +196,27 @@ v1Router.delete('/contacts/:id',
   contactHandler.deleteContact.bind(contactHandler)
 );
 
+// Introduction routes
+v1Router.post('/introductions/stage',
+  validate(setStageSchema, 'body'),
+  introductionHandler.setContactStage.bind(introductionHandler)
+);
+
+v1Router.get('/introductions/stage',
+  validate(getContactsInStageSchema, 'query'),
+  introductionHandler.getContactsInStage.bind(introductionHandler)
+);
+
+v1Router.post('/introductions/stages/bulk-update',
+  validate(bulkSetStageSchema, 'body'),
+  introductionHandler.bulkSetContactStage.bind(introductionHandler)
+);
+
+v1Router.get('/introductions/stage/summary',
+  validate(getStageSummarySchema, 'query'),
+  introductionHandler.getStageSummary.bind(introductionHandler)
+);
+
 // Mount v1 router
 app.use('/v1', v1Router);
 
@@ -222,14 +252,22 @@ app.use(notFoundHandler);
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 8080;
-app.listen(PORT, () => {
-  console.log(`Contact Service v1.0.0 running on port ${PORT}`);
-  console.log('Available endpoints:');
-  console.log('  GET  /health');
-  console.log('  GET  /test-firestore');
-  console.log('  POST /v1/contacts');
-  console.log('  GET  /v1/contacts/:id');
-  console.log('  PATCH /v1/contacts/:id');
-  console.log('  DELETE /v1/contacts/:id');
-  console.log('  GET  /v1/contacts/:id/matches');
-});
+if (process.env.NODE_ENV !== 'test') {
+  app.listen(PORT, () => {
+    console.log(`Contact Service v1.0.0 running on port ${PORT}`);
+    console.log('Available endpoints:');
+    console.log('  GET  /health');
+    console.log('  GET  /test-firestore');
+    console.log('  POST /v1/contacts');
+    console.log('  GET  /v1/contacts/:id');
+    console.log('  PATCH /v1/contacts/:id');
+    console.log('  DELETE /v1/contacts/:id');
+    console.log('  GET  /v1/contacts/:id/matches');
+    console.log('  POST /v1/introductions/stage');
+    console.log('  GET  /v1/introductions/stage');
+    console.log('  POST /v1/introductions/stages/bulk-update');
+  });
+}
+
+export { app };
+export default app;
