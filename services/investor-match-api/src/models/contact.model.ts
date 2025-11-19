@@ -114,6 +114,9 @@ export interface Contact {
   
   /** Distribution capability labels for flattened reads */
   distribution_capability_labels: string[];
+
+  /** Distribution capability quality bucket IDs used for reverse indexing by quality */
+  distribution_quality_bucket_ids: string[];
   
   /** Target criterion IDs - maps to targetCriteria collection */
   target_criterion_ids: string[];

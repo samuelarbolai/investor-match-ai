@@ -124,6 +124,7 @@ async function seedContacts() {
       risk_tolerance_preferences: ['moderate'],
       distribution_capability_ids: [],
       distribution_capability_labels: [],
+      distribution_quality_bucket_ids: [],
       target_criterion_ids: [],
       target_criterion_summaries: [],
       experiences: buildExperiences(i),

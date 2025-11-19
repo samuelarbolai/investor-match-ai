@@ -6,6 +6,7 @@ import { TargetCriterionInput } from '../src/models/target-criterion.model';
 import { ensureValidDocumentId } from '../src/utils/document-id';
 import { deriveActionStatus } from '../src/utils/action-status';
 import { companySyncService } from '../src/services/company-sync.service';
+import { distributionCapabilitySyncService } from '../src/services/distribution-capability-sync.service';
 import {
   jobToBeDoneSeeds,
   skillSeeds,
@@ -74,6 +75,7 @@ async function createCoverageContact(
     risk_tolerance_preferences: [],
     distribution_capability_ids: [],
     distribution_capability_labels: [],
+    distribution_quality_bucket_ids: [],
     target_criterion_ids: [],
     target_criterion_summaries: [],
     experiences: [
@@ -108,6 +110,7 @@ async function createCoverageContact(
   merged.raised_capital_range_labels = merged.raised_capital_range_labels || [];
   merged.distribution_capability_ids = merged.distribution_capability_ids || [];
   merged.distribution_capability_labels = merged.distribution_capability_labels || [];
+  merged.distribution_quality_bucket_ids = merged.distribution_quality_bucket_ids || [];
   merged.target_criterion_ids = merged.target_criterion_ids || [];
   merged.target_criterion_summaries = merged.target_criterion_summaries || [];
   merged.experience_company_ids = merged.experience_company_ids || [];
@@ -133,6 +136,11 @@ async function createCoverageContact(
   const contactId = `coverage_${idSuffix}_${counter}`;
   await writeSyncService.createOrUpdateContact(contactId, contactData, false);
   await companySyncService.syncCompanies(contactId, flattenResult.companies, contactData.experiences || []);
+  await distributionCapabilitySyncService.syncCapabilities(
+    contactId,
+    flattenResult.distributionCapabilities,
+    flattenResult.distributionQualityBuckets
+  );
   counter++;
 }
 

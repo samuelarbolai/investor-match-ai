@@ -195,6 +195,8 @@ export class WriteSyncService {
       industries: [],
       verticals: [],
       product_types: [],
+      distribution_capability_ids: [],
+      distribution_quality_bucket_ids: [],
       funding_stages: [],
       company_headcount_ranges: [],
       engineering_headcount_ranges: [],

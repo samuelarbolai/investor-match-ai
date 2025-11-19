@@ -1,6 +1,6 @@
 {
   "info": {
-    "name": "Investor Match API – Full",
+    "name": "Investor Match API \u2013 Full",
     "description": "Complete REST surface for investor-match-api, covering contacts, matching, introductions, and system diagnostics.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
@@ -13,17 +13,28 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "accept", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "accept",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"full_name\": \"Alicia Founder\",\n  \"contact_type\": \"founder\",\n  \"headline\": \"Building embedded fintech rails\",\n  \"email\": \"alicia@example.com\",\n  \"location_country\": \"USA\",\n  \"location_city\": \"New York\",\n  \"skills\": [\"javascript\", \"product_management\"],\n  \"industries\": [\"fintech\", \"saas\"],\n  \"verticals\": [\"b2b\"],\n  \"funding_stages\": [\"seed\"],\n  \"job_to_be_done\": [\"fundraising\"],\n  \"roles\": [\"ceo\"],\n  \"experiences\": [\n    {\n      \"company\": \"FinTech Labs\",\n      \"role\": \"CEO\",\n      \"start_year\": 2022,\n      \"end_year\": null\n    }\n  ]\n}"
+              "raw": "{\n  \"full_name\": \"Alicia Founder\",\n  \"contact_type\": \"founder\",\n  \"headline\": \"Building embedded fintech rails\",\n  \"email\": \"alicia@example.com\",\n  \"location_country\": \"USA\",\n  \"location_city\": \"New York\",\n  \"current_company\": \"Atlas Labs\",\n  \"current_role\": \"Co-founder & CEO\",\n  \"job_to_be_done\": [\n    \"raise_seed\"\n  ],\n  \"skills\": [\n    \"javascript\",\n    \"product_management\"\n  ],\n  \"industries\": [\n    \"fintech\",\n    \"saas\"\n  ],\n  \"verticals\": [\n    \"payments\"\n  ],\n  \"raised_capital_range_ids\": [\n    \"less_than_500k_usd\"\n  ],\n  \"stage_counts\": {\n    \"prospect\": 3,\n    \"lead\": 1,\n    \"to-meet\": 0,\n    \"met\": 0,\n    \"not-in-campaign\": 0,\n    \"disqualified\": 0\n  },\n  \"experiences\": [\n    {\n      \"company_name\": \"Atlas Labs\",\n      \"company_id\": \"atlas_labs\",\n      \"role\": \"CEO\",\n      \"seniority\": \"executive\",\n      \"start_date\": \"2023-01\",\n      \"end_date\": null,\n      \"current\": true,\n      \"description\": \"Building embedded payments APIs\",\n      \"location_city\": \"New York\",\n      \"location_country\": \"USA\"\n    }\n  ],\n  \"distribution_capabilities\": [\n    {\n      \"distribution_type\": \"SocialMedia\",\n      \"label\": \"Twitter audience 50k\",\n      \"size_score\": 0.8,\n      \"engagement_score\": 0.7,\n      \"quality_score\": 0.6,\n      \"source_url\": \"https://twitter.com/alicia\"\n    }\n  ],\n  \"target_criteria\": [\n    {\n      \"dimension\": \"Industry\",\n      \"operator\": \"in\",\n      \"value\": [\n        \"Fintech\",\n        \"Payments\"\n      ]\n    },\n    {\n      \"dimension\": \"Location\",\n      \"operator\": \"in\",\n      \"value\": [\n        \"USA\",\n        \"Canada\"\n      ]\n    }\n  ],\n  \"companies\": [\n    {\n      \"name\": \"Atlas Labs\",\n      \"domain\": \"atlaslabs.com\"\n    }\n  ]\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/v1/contacts",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "contacts"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "contacts"
+              ]
             }
           }
         },
@@ -31,11 +42,22 @@
           "name": "Get Contact",
           "request": {
             "method": "GET",
-            "header": [{ "key": "accept", "value": "application/json" }],
+            "header": [
+              {
+                "key": "accept",
+                "value": "application/json"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/v1/contacts/{{contactId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "contacts", "{{contactId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "contacts",
+                "{{contactId}}"
+              ]
             }
           }
         },
@@ -44,17 +66,29 @@
           "request": {
             "method": "PATCH",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "accept", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "accept",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"headline\": \"Now leading GTM at FinTech Labs\",\n  \"skills\": [\"javascript\", \"product_management\", \"sales\"]\n}"
+              "raw": "{\n  \"headline\": \"Building treasury infra for SaaS\",\n  \"skills\": [\n    \"go\",\n    \"payments\"\n  ],\n  \"stage_counts\": {\n    \"prospect\": 4,\n    \"lead\": 2,\n    \"to-meet\": 1,\n    \"met\": 0,\n    \"not-in-campaign\": 0,\n    \"disqualified\": 0\n  },\n  \"distribution_capabilities\": [\n    {\n      \"distribution_type\": \"Community\",\n      \"label\": \"Discord 5k members\",\n      \"size_score\": 0.7,\n      \"engagement_score\": 0.65,\n      \"quality_score\": 0.75,\n      \"source_url\": \"https://discord.gg/sample\"\n    }\n  ],\n  \"target_criteria\": [\n    {\n      \"dimension\": \"RaisedCapital\",\n      \"operator\": \">=\",\n      \"value\": [\n        \"Series A\"\n      ]\n    }\n  ]\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/v1/contacts/{{contactId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "contacts", "{{contactId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "contacts",
+                "{{contactId}}"
+              ]
             }
           }
         },
@@ -62,11 +96,22 @@
           "name": "Delete Contact",
           "request": {
             "method": "DELETE",
-            "header": [{ "key": "accept", "value": "application/json" }],
+            "header": [
+              {
+                "key": "accept",
+                "value": "application/json"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/v1/contacts/{{contactId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "contacts", "{{contactId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "contacts",
+                "{{contactId}}"
+              ]
             }
           }
         }
@@ -80,17 +125,29 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "accept", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "accept",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"contact_type\": \"investor\",\n  \"industries\": [\"fintech\"],\n  \"skills\": [\"product_management\"],\n  \"match_mode\": \"any\",\n  \"limit\": 25\n}"
+              "raw": "{\n  \"contact_type\": \"investor\",\n  \"industries\": [\n    \"fintech\"\n  ],\n  \"skills\": [\n    \"go_to_market\"\n  ],\n  \"location_city\": \"San Francisco\",\n  \"company_names\": [\n    \"openai\",\n    \"stripe\"\n  ],\n  \"company_scope\": \"experience\",\n  \"match_mode\": \"all\",\n  \"limit\": 20,\n  \"stage_count_filters\": {\n    \"prospect\": {\n      \"min\": 1\n    },\n    \"met\": {\n      \"max\": 3\n    }\n  }\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/contacts/filter",
-              "host": ["{{baseUrl}}"],
-              "path": ["contacts", "filter"]
+              "raw": "{{baseUrl}}/v1/contacts/filter",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "contacts",
+                "filter"
+              ]
             }
           }
         },
@@ -98,14 +155,34 @@
           "name": "Contact Matches (v1)",
           "request": {
             "method": "GET",
-            "header": [{ "key": "accept", "value": "application/json" }],
+            "header": [
+              {
+                "key": "accept",
+                "value": "application/json"
+              }
+            ],
             "url": {
-              "raw": "{{baseUrl}}/v1/contacts/{{contactId}}/matches?type={{matchType}}&limit=10",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "contacts", "{{contactId}}", "matches"],
+              "raw": "{{baseUrl}}/v1/contacts/{{contactId}}/matches?targetType=investor&limit=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "contacts",
+                "{{contactId}}",
+                "matches"
+              ],
               "query": [
-                { "key": "type", "value": "{{matchType}}" },
-                { "key": "limit", "value": "10" }
+                {
+                  "key": "targetType",
+                  "value": "investor",
+                  "description": "Match founders to investors, investors to founders, or both"
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "description": "Maximum matches to return"
+                }
               ]
             }
           }
@@ -114,13 +191,30 @@
           "name": "Campaign Analysis (legacy)",
           "request": {
             "method": "GET",
-            "header": [{ "key": "accept", "value": "application/json" }],
+            "header": [
+              {
+                "key": "accept",
+                "value": "application/json"
+              }
+            ],
             "url": {
-              "raw": "{{baseUrl}}/contacts/{{contactId}}/campaign-analysis",
-              "host": ["{{baseUrl}}"],
-              "path": ["contacts", "{{contactId}}", "campaign-analysis"],
+              "raw": "{{baseUrl}}/v1/contacts/{{contactId}}/campaign-analysis?target_type={{matchType}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "contacts",
+                "{{contactId}}",
+                "campaign-analysis"
+              ],
               "query": [
-                { "key": "target_type", "value": "{{matchType}}", "disabled": true }
+                {
+                  "key": "target_type",
+                  "value": "{{matchType}}",
+                  "description": "Use current vs target attributes",
+                  "disabled": false
+                }
               ]
             }
           }
@@ -130,17 +224,30 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "accept", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "accept",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"target_type\": \"investor\",\n  \"limit\": 10\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/contacts/{{contactId}}/campaign-matches",
-              "host": ["{{baseUrl}}"],
-              "path": ["contacts", "{{contactId}}", "campaign-matches"]
+              "raw": "{{baseUrl}}/v1/contacts/{{contactId}}/campaign-matches",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "contacts",
+                "{{contactId}}",
+                "campaign-matches"
+              ]
             }
           }
         }
@@ -154,8 +261,14 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "accept", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "accept",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -163,8 +276,14 @@
             },
             "url": {
               "raw": "{{baseUrl}}/v1/introductions/stage",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "introductions", "stage"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "introductions",
+                "stage"
+              ]
             }
           }
         },
@@ -172,14 +291,32 @@
           "name": "List Introductions",
           "request": {
             "method": "GET",
-            "header": [{ "key": "accept", "value": "application/json" }],
+            "header": [
+              {
+                "key": "accept",
+                "value": "application/json"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/v1/introductions/stage?ownerId={{ownerId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "introductions", "stage"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "introductions",
+                "stage"
+              ],
               "query": [
-                { "key": "ownerId", "value": "{{ownerId}}" },
-                { "key": "stage", "value": "prospect", "disabled": true }
+                {
+                  "key": "ownerId",
+                  "value": "{{ownerId}}"
+                },
+                {
+                  "key": "stage",
+                  "value": "prospect",
+                  "disabled": true
+                }
               ]
             }
           }
@@ -189,8 +326,14 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "accept", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "accept",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -198,8 +341,15 @@
             },
             "url": {
               "raw": "{{baseUrl}}/v1/introductions/stages/bulk-update",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "introductions", "stages", "bulk-update"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "introductions",
+                "stages",
+                "bulk-update"
+              ]
             }
           }
         },
@@ -207,13 +357,28 @@
           "name": "Stage Summary",
           "request": {
             "method": "GET",
-            "header": [{ "key": "accept", "value": "application/json" }],
+            "header": [
+              {
+                "key": "accept",
+                "value": "application/json"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/v1/introductions/stage/summary?ownerId={{ownerId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "introductions", "stage", "summary"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "introductions",
+                "stage",
+                "summary"
+              ],
               "query": [
-                { "key": "ownerId", "value": "{{ownerId}}" }
+                {
+                  "key": "ownerId",
+                  "value": "{{ownerId}}"
+                }
               ]
             }
           }
@@ -229,8 +394,12 @@
             "method": "GET",
             "url": {
               "raw": "{{baseUrl}}/health",
-              "host": ["{{baseUrl}}"],
-              "path": ["health"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "health"
+              ]
             }
           }
         },
@@ -240,8 +409,12 @@
             "method": "GET",
             "url": {
               "raw": "{{baseUrl}}/test-firestore",
-              "host": ["{{baseUrl}}"],
-              "path": ["test-firestore"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "test-firestore"
+              ]
             }
           }
         },
@@ -251,8 +424,12 @@
             "method": "GET",
             "url": {
               "raw": "{{baseUrl}}/api-docs",
-              "host": ["{{baseUrl}}"],
-              "path": ["api-docs"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api-docs"
+              ]
             }
           }
         }
@@ -266,8 +443,14 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "accept", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "accept",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -275,8 +458,12 @@
             },
             "url": {
               "raw": "{{baseUrl}}/contacts",
-              "host": ["{{baseUrl}}"],
-              "path": ["contacts"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "contacts"
+              ]
             }
           }
         },
@@ -286,8 +473,13 @@
             "method": "GET",
             "url": {
               "raw": "{{baseUrl}}/contacts/{{contactId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["contacts", "{{contactId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "contacts",
+                "{{contactId}}"
+              ]
             }
           }
         },
@@ -296,8 +488,14 @@
           "request": {
             "method": "PATCH",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "accept", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "accept",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -305,8 +503,13 @@
             },
             "url": {
               "raw": "{{baseUrl}}/contacts/{{contactId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["contacts", "{{contactId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "contacts",
+                "{{contactId}}"
+              ]
             }
           }
         },
@@ -316,8 +519,13 @@
             "method": "DELETE",
             "url": {
               "raw": "{{baseUrl}}/contacts/{{contactId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["contacts", "{{contactId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "contacts",
+                "{{contactId}}"
+              ]
             }
           }
         }
@@ -325,10 +533,25 @@
     }
   ],
   "variable": [
-    { "key": "baseUrl", "value": "https://investor-match-api-23715448976.us-east1.run.app" },
-    { "key": "contactId", "value": "contact-123" },
-    { "key": "ownerId", "value": "contact-owner" },
-    { "key": "targetId", "value": "contact-456" },
-    { "key": "matchType", "value": "investor" }
+    {
+      "key": "baseUrl",
+      "value": "https://investor-match-api-23715448976.us-east1.run.app"
+    },
+    {
+      "key": "contactId",
+      "value": "contact-123"
+    },
+    {
+      "key": "ownerId",
+      "value": "contact-owner"
+    },
+    {
+      "key": "targetId",
+      "value": "contact-456"
+    },
+    {
+      "key": "matchType",
+      "value": "investor"
+    }
   ]
 }

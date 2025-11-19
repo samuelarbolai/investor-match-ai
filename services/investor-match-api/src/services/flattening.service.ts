@@ -38,6 +38,14 @@ export interface FlatteningResult {
   distributionCapabilities: DistributionCapability[];
   targetCriteria: TargetCriterion[];
   experienceCompanyIds: string[];
+  distributionQualityBuckets: DistributionQualityBucket[];
+}
+
+export interface DistributionQualityBucket {
+  id: string;
+  distribution_type: string;
+  bucket: number;
+  label: string;
 }
 
 /**
@@ -50,6 +58,7 @@ export class FlatteningService {
     const distributionCapabilities = this.normalizeDistributionCapabilities(payload.distributionCapabilities);
     const targetCriteria = this.normalizeTargetCriteria(payload.targetCriteria);
     const experienceCompanyIds = this.collectExperienceCompanyIds(payload.experiences);
+    const distributionQualityBuckets = this.buildDistributionQualityBuckets(distributionCapabilities);
     const targetFieldUpdates = this.denormalizeTargetCriteria(targetCriteria);
 
     const contactUpdates: Partial<Contact> = {
@@ -58,6 +67,7 @@ export class FlatteningService {
       current_company_id: payload.contact.current_company_id || companies[0]?.id || null,
       distribution_capability_ids: distributionCapabilities.map(dc => dc.id),
       distribution_capability_labels: distributionCapabilities.map(dc => dc.label),
+      distribution_quality_bucket_ids: distributionQualityBuckets.map(bucket => bucket.id),
       target_criterion_ids: targetCriteria.map(tc => tc.id),
       target_criterion_summaries: targetCriteria.map(tc => tc.label),
       experience_company_ids: experienceCompanyIds,
@@ -69,7 +79,8 @@ export class FlatteningService {
       companies,
       distributionCapabilities,
       targetCriteria,
-      experienceCompanyIds
+      experienceCompanyIds,
+      distributionQualityBuckets
     };
   }
 
@@ -143,6 +154,28 @@ export class FlatteningService {
           source_url: input.source_url ?? null
         };
       });
+  }
+
+  private buildDistributionQualityBuckets(capabilities: DistributionCapability[]): DistributionQualityBucket[] {
+    const buckets: DistributionQualityBucket[] = [];
+
+    for (const capability of capabilities) {
+      if (typeof capability.quality_score !== 'number') {
+        continue;
+      }
+
+      const normalized = Math.max(0, Math.min(1, capability.quality_score));
+      const bucket = Math.max(1, Math.min(10, Math.round(normalized * 10)));
+      const bucketId = ensureValidDocumentId(`${capability.distribution_type}_quality_${bucket}`);
+      buckets.push({
+        id: bucketId,
+        distribution_type: capability.distribution_type,
+        bucket,
+        label: `${capability.distribution_type} quality ${bucket}`
+      });
+    }
+
+    return buckets;
   }
 
   private normalizeTargetCriteria(inputs?: TargetCriterionInput[]): TargetCriterion[] {

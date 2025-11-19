@@ -101,6 +101,7 @@ services/investor-match-api/
 
 ## Recent Schema Enhancements
 - Contacts now include normalized company + experience nodes via `companySyncService`. Each write creates `/companies` and `/experiences` docs (with industries/verticals) while keeping flattened arrays on the contact.
+- Distribution capabilities now persist as normalized nodes (type + label + size/engagement/quality/source) via `distributionCapabilitySyncService`, and each quality score creates a reverse-index bucket (e.g., `socialmedia_quality_8`) so we can filter founders/investors by distribution strength.
 - Investor intent is mirrored into `target_*` arrays (industries, verticals, skills, roles, distribution_capabilities, raised_capital ranges, locations, company IDs, etc.). Reverse-index mapping covers the new fields so we can query “investors targeting Fintech founders.”
 - `flatteningService` denormalizes target criteria into those arrays and still writes `target_criterion_ids` for graph access.
 - Matching logic (`matching.service.ts`) decides whether to compare `current_*` or `target_*` fields based on the seed contact’s type (founders vs investors), so founders’ current attributes match against investors’ target intent.

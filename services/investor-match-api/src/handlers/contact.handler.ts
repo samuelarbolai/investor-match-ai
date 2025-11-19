@@ -3,12 +3,13 @@ import { collections, Timestamp } from '../config/firebase';
 import { Contact, ContactInput, ContactType } from '../models/contact.model';
 import { writeSyncService } from '../services/write-sync.service';
 import { matchingService } from '../services/matching.service';
-import { flatteningService } from '../services/flattening.service';
-import { DistributionCapabilityInput } from '../models/distribution-capability.model';
+import { flatteningService, DistributionQualityBucket } from '../services/flattening.service';
+import { DistributionCapabilityInput, DistributionCapability } from '../models/distribution-capability.model';
 import { TargetCriterionInput } from '../models/target-criterion.model';
 import { CompanyInput } from '../models/company.model';
 import { deriveActionStatus } from '../utils/action-status';
 import { companySyncService } from '../services/company-sync.service';
+import { distributionCapabilitySyncService } from '../services/distribution-capability-sync.service';
 import { Company } from '../models/company.model';
 
 export type ContactRequestExtras = {
@@ -20,6 +21,8 @@ export type ContactRequestExtras = {
 interface PreparedContactPayload {
   contact: ContactInput;
   normalizedCompanies: Company[];
+  distributionCapabilities: DistributionCapability[];
+  distributionQualityBuckets: DistributionQualityBucket[];
 }
 
 /**
@@ -85,12 +88,22 @@ export class ContactHandler {
    *                   type: string
    *                 description: Array of verticals
    *                 example: ["payments", "lending"]
-   *               funding_stages:
+   *               raised_capital_range_ids:
    *                 type: array
    *                 items:
    *                   type: string
-   *                 description: Array of funding stages
-   *                 example: ["seed", "series-a"]
+   *                 description: Canonical raised capital range identifiers (preferred over legacy funding_stages)
+   *                 example: ["less_than_500k_usd"]
+   *               stage_counts:
+   *                 type: object
+   *                 description: Cached introduction stage counts used for action status
+   *                 example:
+   *                   prospect: 3
+   *                   lead: 1
+   *                   to-meet: 0
+   *                   met: 0
+   *                   not-in-campaign: 0
+   *                   disqualified: 0
    *               current_company:
    *                 type: string
    *                 description: Current company name
@@ -108,22 +121,120 @@ export class ContactHandler {
    *                 format: email
    *                 description: Email address
    *                 example: "jane@techstartup.com"
+   *               experiences:
+   *                 type: array
+   *                 description: Embedded work history used to create `/experiences` + `/companies` nodes
+   *                 items:
+   *                   type: object
+   *                   properties:
+   *                     company_name:
+   *                       type: string
+   *                     company_id:
+   *                       type: string
+   *                     role:
+   *                       type: string
+   *                     seniority:
+   *                       type: string
+   *                     start_date:
+   *                       type: string
+   *                       example: "2023-01"
+   *                     end_date:
+   *                       type: string
+   *                       nullable: true
+   *                     current:
+   *                       type: boolean
+   *                     description:
+   *                       type: string
+   *                     location_city:
+   *                       type: string
+   *                     location_country:
+   *                       type: string
+   *               distribution_capabilities:
+   *                 type: array
+   *                 description: Normalized distribution payloads (persisted to `/distributionCapabilities` with score history)
+   *                 items:
+   *                   type: object
+   *                   properties:
+   *                     distribution_type:
+   *                       type: string
+   *                     label:
+   *                       type: string
+   *                     size_score:
+   *                       type: number
+   *                     engagement_score:
+   *                       type: number
+   *                     quality_score:
+   *                       type: number
+   *                     source_url:
+   *                       type: string
+   *               target_criteria:
+   *                 type: array
+   *                 description: Structured investor thesis dimensions
+   *                 items:
+   *                   type: object
+   *                   properties:
+   *                     dimension:
+   *                       type: string
+   *                     operator:
+   *                       type: string
+   *                       enum: ['=', 'in', '>=', '<=', 'between']
+   *                     value:
+   *                       description: Raw value (string, array, or numeric)
+   *               companies:
+   *                 type: array
+   *                 description: Optional normalized companies to ensure `/companies` docs exist
+   *                 items:
+   *                   type: object
+   *                   properties:
+   *                     name:
+   *                       type: string
+   *                     domain:
+   *                       type: string
    *           examples:
    *             founder:
    *               summary: Founder example
    *               value:
-   *                 full_name: "Jane Founder"
+   *                 full_name: "Alicia Founder"
    *                 contact_type: "founder"
-   *                 headline: "Building the future of fintech"
-   *                 location_city: "San Francisco"
+   *                 headline: "Building embedded fintech rails"
+   *                 email: "alicia@example.com"
+   *                 location_city: "New York"
    *                 location_country: "USA"
-   *                 skills: ["javascript", "product-management", "fundraising"]
+   *                 current_company: "Atlas Labs"
+   *                 current_role: "Co-founder & CEO"
+   *                 job_to_be_done: ["raise_seed"]
+   *                 skills: ["javascript", "product_management"]
    *                 industries: ["fintech", "saas"]
-   *                 funding_stages: ["seed", "series-a"]
-   *                 current_company: "TechStartup Inc"
-   *                 current_role: "CEO & Founder"
-   *                 linkedin_url: "https://linkedin.com/in/jane-founder"
-   *                 email: "jane@techstartup.com"
+   *                 verticals: ["payments"]
+   *                 raised_capital_range_ids: ["less_than_500k_usd"]
+   *                 stage_counts:
+   *                   prospect: 3
+   *                   lead: 1
+   *                   to-meet: 0
+   *                   met: 0
+   *                   not-in-campaign: 0
+   *                   disqualified: 0
+   *                 experiences:
+   *                   - company_name: "Atlas Labs"
+   *                     company_id: "atlas_labs"
+   *                     role: "CEO"
+   *                     seniority: "executive"
+   *                     start_date: "2023-01"
+   *                     end_date: null
+   *                     current: true
+   *                 distribution_capabilities:
+   *                   - distribution_type: "SocialMedia"
+   *                     label: "Twitter audience 50k"
+   *                     size_score: 0.8
+   *                     engagement_score: 0.7
+   *                     quality_score: 0.6
+   *                 target_criteria:
+   *                   - dimension: "Industry"
+   *                     operator: "in"
+   *                     value: ["Fintech", "Payments"]
+   *                 companies:
+   *                   - name: "Atlas Labs"
+   *                     domain: "atlaslabs.com"
    *             investor:
    *               summary: Investor example
    *               value:
@@ -134,11 +245,15 @@ export class ContactHandler {
    *                 location_country: "USA"
    *                 skills: ["due-diligence", "portfolio-management"]
    *                 industries: ["fintech", "healthcare", "ai"]
-   *                 funding_stages: ["series-a", "series-b"]
    *                 current_company: "VentureCapital Fund"
    *                 current_role: "Partner"
-   *                 linkedin_url: "https://linkedin.com/in/bob-investor"
-   *                 email: "bob@vcfund.com"
+   *                 target_criteria:
+   *                   - dimension: "Location"
+   *                     operator: "in"
+   *                     value: ["USA", "Canada"]
+   *                   - dimension: "RaisedCapital"
+   *                     operator: ">="
+   *                     value: ["Series A"]
    *     responses:
    *       201:
    *         description: Contact created successfully
@@ -156,10 +271,20 @@ export class ContactHandler {
   async createContact(req: Request, res: Response): Promise<void> {
     try {
       const contactRef = collections.contacts().doc();
-      const { contact: preparedContact, normalizedCompanies } = prepareContactPayload(req.body as ContactInput & ContactRequestExtras);
+      const {
+        contact: preparedContact,
+        normalizedCompanies,
+        distributionCapabilities,
+        distributionQualityBuckets
+      } = prepareContactPayload(req.body as ContactInput & ContactRequestExtras);
       
       await writeSyncService.createOrUpdateContact(contactRef.id, preparedContact, false);
       await companySyncService.syncCompanies(contactRef.id, normalizedCompanies, preparedContact.experiences || []);
+      await distributionCapabilitySyncService.syncCapabilities(
+        contactRef.id,
+        distributionCapabilities,
+        distributionQualityBuckets
+      );
       
       // Get the created contact
       const doc = await contactRef.get();
@@ -471,11 +596,21 @@ export class ContactHandler {
       }
 
       const existing = doc.data() as Contact;
-      const { contact: preparedContact, normalizedCompanies } = prepareContactPayload(updates, existing);
+      const {
+        contact: preparedContact,
+        normalizedCompanies,
+        distributionCapabilities,
+        distributionQualityBuckets
+      } = prepareContactPayload(updates, existing);
       
       // Use WriteSyncService for proper reverse index sync
       await writeSyncService.createOrUpdateContact(id, preparedContact, true);
       await companySyncService.syncCompanies(id, normalizedCompanies, preparedContact.experiences || []);
+      await distributionCapabilitySyncService.syncCapabilities(
+        id,
+        distributionCapabilities,
+        distributionQualityBuckets
+      );
       
       // Get updated contact
       const updatedDoc = await collections.contacts().doc(id).get();
@@ -904,11 +1039,12 @@ export class ContactHandler {
    *         description: Contact ID to find matches for
    *         example: "jane-founder-abc123"
    *       - in: query
-   *         name: type
+   *         name: targetType
    *         schema:
    *           type: string
-   *           enum: [founder, investor]
-   *         description: Type of contacts to match with
+   *           enum: [founder, investor, both]
+   *           default: investor
+   *         description: Match this contact against founders, investors, or both
    *         example: "investor"
    *       - in: query
    *         name: limit
@@ -995,6 +1131,7 @@ export function prepareContactPayload(
   base.raised_capital_range_labels = base.raised_capital_range_labels || [];
   base.distribution_capability_ids = base.distribution_capability_ids || [];
   base.distribution_capability_labels = base.distribution_capability_labels || [];
+  base.distribution_quality_bucket_ids = base.distribution_quality_bucket_ids || [];
   base.target_criterion_ids = base.target_criterion_ids || [];
   base.target_criterion_summaries = base.target_criterion_summaries || [];
   base.target_industries = base.target_industries || [];
@@ -1037,7 +1174,9 @@ export function prepareContactPayload(
 
   return {
     contact: contactData,
-    normalizedCompanies: flattened.companies
+    normalizedCompanies: flattened.companies,
+    distributionCapabilities: flattened.distributionCapabilities,
+    distributionQualityBuckets: flattened.distributionQualityBuckets
   };
 }
 

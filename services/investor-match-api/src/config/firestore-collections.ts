@@ -46,6 +46,9 @@ export const COLLECTIONS = {
   
   /** Distribution capability collection */
   DISTRIBUTION_CAPABILITIES: 'distributionCapabilities',
+
+  /** Distribution quality bucket collection */
+  DISTRIBUTION_QUALITY_BUCKETS: 'distributionQualityBuckets',
   
   /** Target criterion collection */
   TARGET_CRITERIA: 'targetCriteria',
@@ -77,6 +80,7 @@ export const collections = {
   targetDomains: () => db.collection(COLLECTIONS.TARGET_DOMAINS),
   roles: () => db.collection(COLLECTIONS.ROLES),
   distributionCapabilities: () => db.collection(COLLECTIONS.DISTRIBUTION_CAPABILITIES),
+  distributionQualityBuckets: () => db.collection(COLLECTIONS.DISTRIBUTION_QUALITY_BUCKETS),
   targetCriteria: () => db.collection(COLLECTIONS.TARGET_CRITERIA),
   companies: () => db.collection(COLLECTIONS.COMPANIES),
   experiences: () => db.collection(COLLECTIONS.EXPERIENCES),

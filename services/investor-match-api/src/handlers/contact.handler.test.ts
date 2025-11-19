@@ -41,6 +41,7 @@ describe('prepareContactPayload', () => {
         current_company_id: 'acme-inc',
         distribution_capability_ids: ['dist-1'],
         distribution_capability_labels: ['Dist 1'],
+        distribution_quality_bucket_ids: ['dist-quality'],
         target_criterion_ids: ['crit-1'],
         target_criterion_summaries: ['Industry = Fintech'],
         experience_company_ids: ['acme-inc'],
@@ -49,7 +50,8 @@ describe('prepareContactPayload', () => {
       companies: normalizedCompanies,
       distributionCapabilities: [],
       targetCriteria: [],
-      experienceCompanyIds: ['acme-inc']
+      experienceCompanyIds: ['acme-inc'],
+      distributionQualityBuckets: [{ id: 'dist-quality', distribution_type: 'newsletter', bucket: 8, label: 'newsletter quality 8' }]
     });
 
     const payload: Partial<ContactInput> = {
@@ -64,6 +66,7 @@ describe('prepareContactPayload', () => {
     expect(result.contact.action_status).toBe('waiting');
     expect(result.contact.experience_company_ids).toEqual(['acme-inc']);
     expect(result.contact.distribution_capability_ids).toEqual(['dist-1']);
+    expect(result.contact.distribution_quality_bucket_ids).toEqual(['dist-quality']);
     expect(result.contact.target_industries).toEqual(['fintech']);
     expect(result.normalizedCompanies).toEqual(normalizedCompanies);
   });
@@ -76,7 +79,8 @@ describe('prepareContactPayload', () => {
       companies: [],
       distributionCapabilities: [],
       targetCriteria: [],
-      experienceCompanyIds: []
+      experienceCompanyIds: [],
+      distributionQualityBuckets: []
     });
 
     const payload: Partial<ContactInput> = {

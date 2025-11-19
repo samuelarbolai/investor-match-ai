@@ -37,6 +37,7 @@ export const createContactSchema = Joi.object({
   risk_tolerance_preferences: Joi.array().items(Joi.string()).default([]),
   distribution_capability_ids: Joi.array().items(Joi.string()).default([]),
   distribution_capability_labels: Joi.array().items(Joi.string()).default([]),
+  distribution_quality_bucket_ids: Joi.array().items(Joi.string()).default([]),
   target_criterion_ids: Joi.array().items(Joi.string()).default([]),
   target_criterion_summaries: Joi.array().items(Joi.string()).default([]),
   target_industries: Joi.array().items(Joi.string()).default([]),

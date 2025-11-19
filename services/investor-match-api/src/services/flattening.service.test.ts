@@ -63,6 +63,15 @@ describe('FlatteningService', () => {
     expect(result.distributionCapabilities[0].id).toContain('newsletter');
     expect(result.contactUpdates.raised_capital_range_labels).toEqual(['Seed Round']);
     expect(result.experienceCompanyIds.sort()).toEqual(['acme_inc', 'side_project_co']);
+    expect(result.contactUpdates.distribution_quality_bucket_ids).toEqual(['newsletter_quality_7']);
+    expect(result.distributionQualityBuckets).toEqual([
+      {
+        id: 'newsletter_quality_7',
+        distribution_type: 'newsletter',
+        bucket: 7,
+        label: 'newsletter quality 7'
+      }
+    ]);
   });
 
   it('denormalizes target criteria into thesis arrays and location filters', () => {

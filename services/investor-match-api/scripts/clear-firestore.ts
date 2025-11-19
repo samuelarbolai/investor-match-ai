@@ -13,6 +13,7 @@ const collectionGetters = [
   collections.targetDomains,
   collections.roles,
   collections.distributionCapabilities,
+  collections.distributionQualityBuckets,
   collections.targetCriteria,
   collections.companies,
   collections.experiences

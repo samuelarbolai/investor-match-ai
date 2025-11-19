@@ -90,6 +90,7 @@ const baseContact: Contact = {
   risk_tolerance_preferences: [],
   distribution_capability_ids: [],
   distribution_capability_labels: [],
+  distribution_quality_bucket_ids: [],
   target_criterion_ids: [],
   target_criterion_summaries: [],
   target_industries: [],

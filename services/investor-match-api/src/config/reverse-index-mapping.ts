@@ -77,6 +77,12 @@ export const REVERSE_INDEX_MAPPING = {
     collection: COLLECTIONS.DISTRIBUTION_CAPABILITIES,
     edgeName: '_HAS_DISTRIBUTION'
   },
+
+  /** Distribution quality bucket IDs map to distributionQualityBuckets collection */
+  distribution_quality_bucket_ids: {
+    collection: COLLECTIONS.DISTRIBUTION_QUALITY_BUCKETS,
+    edgeName: '_HAS_DISTRIBUTION_QUALITY'
+  },
   
   /** Target criterion IDs map to targetCriteria collection */
   target_criterion_ids: {

@@ -40,6 +40,7 @@ export const collections = {
   targetDomains: () => db.collection(COLLECTIONS.TARGET_DOMAINS),
   roles: () => db.collection(COLLECTIONS.ROLES),
   distributionCapabilities: () => db.collection(COLLECTIONS.DISTRIBUTION_CAPABILITIES),
+  distributionQualityBuckets: () => db.collection(COLLECTIONS.DISTRIBUTION_QUALITY_BUCKETS),
   targetCriteria: () => db.collection(COLLECTIONS.TARGET_CRITERIA),
   companies: () => db.collection(COLLECTIONS.COMPANIES),
   experiences: () => db.collection(COLLECTIONS.EXPERIENCES)

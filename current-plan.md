@@ -47,6 +47,7 @@
 - [ ] Add custom metrics (match query duration, contact creation rate)
 - [ ] Document runbook for common issues
 - [ ] Confirm contact CRUD auto-creates normalized companies/target criteria and that `/v1/contacts/filter` supports company-name filters before UI phase
+- [x] Persist distribution capability nodes (type + scores) and expose quality-bucket reverse indexes for filtering (completed 2025-11-19)
 
 **Deliverables:**
 - GCP monitoring dashboard

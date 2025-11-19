@@ -93,6 +93,11 @@ const options = {
               type: 'array',
               items: { type: 'string' }
             },
+            distribution_quality_bucket_ids: {
+              type: 'array',
+              items: { type: 'string' },
+              description: 'Distribution capability quality bucket identifiers (e.g., socialmedia_quality_8)'
+            },
             target_criterion_ids: {
               type: 'array',
               items: { type: 'string' },
