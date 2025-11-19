@@ -94,21 +94,21 @@ export class FlatteningService {
         domain: payload.contact.current_company_id ?? null,
         industries: payload.contact.industries,
         verticals: payload.contact.verticals
-      });
+      } as CompanyInput);
     }
 
-    const pastCompanies = Array.isArray(payload.contact.past_companies)
+    const pastCompanies: CompanyInput[] = Array.isArray(payload.contact.past_companies)
       ? payload.contact.past_companies.map(name => ({ name } as CompanyInput))
       : [];
 
-    const experienceCompanies = (payload.experiences || [])
+    const experienceCompanies: CompanyInput[] = (payload.experiences || [])
       .filter(exp => Boolean(exp.company_name))
       .map(exp => ({
         name: exp.company_name!,
         domain: exp.company_id ?? null
-      }));
+      } as CompanyInput));
 
-    const combined = [
+    const combined: CompanyInput[] = [
       ...provided,
       ...inferredFromContact,
       ...pastCompanies,
