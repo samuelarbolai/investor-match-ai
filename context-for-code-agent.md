@@ -39,19 +39,16 @@
 - **Service URL**: `https://investor-match-api-23715448976.us-east1.run.app`
 - **Test Coverage**: 86% on matching service, 100% on utils
 
-## Phase 7 Documentation Completed
-- ✅ **Enhanced README**: Comprehensive API documentation with setup instructions
-- ✅ **Swagger/OpenAPI**: Complete interactive API documentation at `/api-docs`
-  - All 7 endpoints documented with examples
-  - Detailed parameter schemas for POST requests
-  - Path and query parameter examples for testing
-- ✅ **Architecture Diagram**: `/docs/architecture-diagram.html` - Visual system overview
-- ✅ **Operations Runbook**: `/docs/RUNBOOK.md` - Troubleshooting and maintenance guide
-- ✅ **Cost Optimization**: Documented in README (Firestore optimization strategies)
-- ✅ **Postman Collections**:
-  - `postman/investor-match-api.postman_collection.json` – full REST coverage (contacts, matching, introductions, system, legacy routes) with shared variables (`baseUrl`, `contactId`, `ownerId`, `targetId`, `matchType`)
-  - `postman/investor-match-introductions.postman_collection.json` – focused set for introductions-only workflows
-  - Usage reminder: Import JSON into Postman → set collection variables (production base URL + sample IDs) → run requests; no auth headers needed currently.
+## Phase 7 Documentation / Testing Artifacts
+- ✅ **Enhanced README** with setup instructions, schema summary, and seeding workflow.
+- ✅ **Swagger/OpenAPI** at `/api-docs` now reflects the expanded Contact schema (target intent arrays, company/experience nodes, `action_status`).
+- ✅ **Architecture Diagram**: `/docs/architecture-diagram.html`.
+- ✅ **Operations Runbook**: `/docs/RUNBOOK.md`.
+- ✅ **Cost Optimization**: documented in README.
+- ✅ **Testing artifacts**:
+  - `docs/testing-plan-v2.md` – checklist for unit/integration/load/manual validation of the schema overhaul.
+  - Seeding scripts (`npm run clear:firestore`, `seed:vocabs`, `seed:coverage-contacts`, `backfill:nodes`) keep the dev project aligned with DataBaseSchema_v0.2.
+- ✅ **Postman collections** (`postman/`) include examples covering the new fields; set `baseUrl` + IDs before manual tests.
 
 ## Swagger API Documentation Status
 - **URL**: https://investor-match-api-23715448976.us-east1.run.app/api-docs
@@ -80,6 +77,7 @@
   - `npm run test:unit` - Unit tests only
 - **Integration**: Firestore emulator setup
 - **Load Testing**: k6 scripts with performance benchmarks
+- **Schema v2 test plan**: see `docs/testing-plan-v2.md` for the full pre-release checklist (dataset seeding, unit/integration/load/manual QA)
 
 ## Key Files Structure
 ```
@@ -99,8 +97,12 @@ services/investor-match-api/
 └── Dockerfile           # Container configuration
 ```
 
-## Remaining Work (Phase 7 Milestone 7.2)
-- **Status**: ✅ Completed via custom metrics + docs. `src/observability/metrics.service.ts` emits log-based metrics consumed by dashboards (`docs/monitoring/dashboard.introductions.json`) and alert policies (`docs/monitoring/alert-policies.md`). `introduction.service` now reports duration/counter metrics and stage-count update health.
+## Recent Schema Enhancements
+- Contacts now include normalized company + experience nodes via `companySyncService`. Each write creates `/companies` and `/experiences` docs (with industries/verticals) while keeping flattened arrays on the contact.
+- Investor intent is mirrored into `target_*` arrays (industries, verticals, skills, roles, distribution_capabilities, raised_capital ranges, locations, company IDs, etc.). Reverse-index mapping covers the new fields so we can query “investors targeting Fintech founders.”
+- `flatteningService` denormalizes target criteria into those arrays and still writes `target_criterion_ids` for graph access.
+- Matching logic (`matching.service.ts`) decides whether to compare `current_*` or `target_*` fields based on the seed contact’s type (founders vs investors), so founders’ current attributes match against investors’ target intent.
+- Dev Firestore seeding pipeline (`clear:firestore`, `seed:vocabs`, `seed:coverage-contacts`, `backfill:nodes`) populates every vocab entry plus coverage contacts that reference each node. `/companies` and `/experiences` collections now contain synthetic documents for UI testing.
 
 ## Important Notes
 - All core functionality is working and production-ready
@@ -124,9 +126,10 @@ services/investor-match-api/
 - **API Exposure**: `/v1/contacts` responses now include `stage_counts`, and `/contacts/filter` accepts `stage_count_filters` (min/max per stage) so clients can render columns or numeric filters.
 
 ## Signposts for Upcoming Work
-- **Phase 7 Milestone 7.2 (Monitoring & Observability)**: Still **PENDING** – dashboards, alerting, and custom metrics not yet delivered.
-- **UI ↔ API Integration**: Next session will focus on wiring the completed introductions workflow into the UI (review front-end repo, align with API contracts, build UX flows).
-- **Production Validation**: New introduction endpoints are documented and tested locally but not yet confirmed running in Cloud Run; redeploy main branch before end-to-end UI tests.
+- **Testing pass**: Run through `docs/testing-plan-v2.md` (seed dev Firestore, execute unit/integration/load tests, follow the manual QA checklist) before merging or promoting to prod.
+- **Monitoring & Observability**: Phase 7 Milestone 7.2 still pending final dashboard/alert validation.
+- **UI ↔ API Integration**: next UI session should consume the new target arrays, Action Status, and company/experience nodes.
+- **Production Validation**: once tests pass, redeploy main to Cloud Run and verify the new fields via `/api-docs` + Postman.
 
 ## Next Steps if Context Lost
 1. **Current Focus**: Complete Phase 7 Milestone 7.2 (Monitoring & Observability)

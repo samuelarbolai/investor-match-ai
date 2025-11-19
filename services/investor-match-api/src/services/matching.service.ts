@@ -240,20 +240,21 @@ export class MatchingService {
     const seedContact = seedDoc.data() as Contact;
     
     // Map user-friendly attribute names to field names
-    const attributeFieldMap: Record<string, string[]> = {
-      'skills': ['skills'],
-      'industries': ['industries'],
-      'verticals': ['verticals'],
-      'funding_stages': ['funding_stages'],
-      'location': ['location_city', 'location_country']
+    const attributeFieldMap: Record<string, { current: string[]; target: string[] }> = {
+      'skills': { current: ['skills'], target: ['target_skills'] },
+      'industries': { current: ['industries'], target: ['target_industries'] },
+      'verticals': { current: ['verticals'], target: ['target_verticals'] },
+      'funding_stages': { current: ['funding_stages'], target: ['target_raised_capital_range_ids'] },
+      'location': { current: ['location_city', 'location_country'], target: ['target_location_cities', 'target_location_countries'] }
     };
+    const useTargetAttributes = this.shouldUseTargetAttributes(seedContact, targetType);
     
     // Get fields to process based on selected attributes
     const fieldsToProcess: string[] = [];
     for (const attr of attributes) {
-      const fields = attributeFieldMap[attr];
-      if (fields) {
-        fieldsToProcess.push(...fields);
+      const fieldConfig = attributeFieldMap[attr];
+      if (fieldConfig) {
+        fieldsToProcess.push(...(useTargetAttributes ? fieldConfig.target : fieldConfig.current));
       }
     }
     
@@ -273,7 +274,7 @@ export class MatchingService {
     // Process only selected fields
     for (const field of fieldsToProcess) {
       // Handle location separately (not in reverse index)
-      if (field === 'location_city' || field === 'location_country') {
+      if (field === 'location_city' || field === 'location_country' || field === 'target_location_cities' || field === 'target_location_countries') {
         continue; // Handle in filtering step
       }
       
@@ -331,6 +332,8 @@ export class MatchingService {
     
     // Handle location filtering if selected
     const useLocationFilter = attributes.includes('location');
+    const seedLocationCities = useTargetAttributes ? (seedContact.target_location_cities || []) : (seedContact.location_city ? [seedContact.location_city] : []);
+    const seedLocationCountries = useTargetAttributes ? (seedContact.target_location_countries || []) : (seedContact.location_country ? [seedContact.location_country] : []);
     
     // Get top candidates
     const sortedCandidates = Array.from(scores.entries())
@@ -355,20 +358,36 @@ export class MatchingService {
         
         // Filter by location if selected
         if (useLocationFilter) {
-          const cityMatch = seedContact.location_city === candidateContact.location_city;
-          const countryMatch = seedContact.location_country === candidateContact.location_country;
+          let locationMatched = false;
+          let matchedValue: string | null = null;
           
-          if (!cityMatch && !countryMatch) {
+          if (useTargetAttributes) {
+            const candidateCity = candidateContact.location_city || '';
+            const candidateCountry = candidateContact.location_country || '';
+            if (seedLocationCities.includes(candidateCity) && candidateCity) {
+              locationMatched = true;
+              matchedValue = candidateCity;
+            } else if (seedLocationCountries.includes(candidateCountry) && candidateCountry) {
+              locationMatched = true;
+              matchedValue = candidateCountry;
+            }
+          } else {
+            const cityMatch = seedContact.location_city === candidateContact.location_city;
+            const countryMatch = seedContact.location_country === candidateContact.location_country;
+            locationMatched = cityMatch || countryMatch;
+            matchedValue = cityMatch ? seedContact.location_city : seedContact.location_country;
+          }
+          
+          if (!locationMatched) {
             continue;
           }
           
-          // Add location to overlaps if it matches
-          if (cityMatch || countryMatch) {
+          if (matchedValue) {
             const candidateOverlaps = overlaps.get(candidateId) || [];
             candidateOverlaps.push({
               attribute: 'location',
               collection: 'location',
-              values: cityMatch ? [seedContact.location_city || ''] : [seedContact.location_country || '']
+              values: [matchedValue]
             });
             overlaps.set(candidateId, candidateOverlaps);
           }
@@ -467,10 +486,21 @@ export class MatchingService {
       'companyHeadcountRanges': 'companyHeadcountRanges',
       'engineeringHeadcountRanges': 'engineeringHeadcountRanges',
       'targetDomains': 'targetDomains',
-      'roles': 'roles'
+      'roles': 'roles',
+      'raisedCapitalRanges': 'raisedCapitalRanges',
+      'distributionCapabilities': 'distributionCapabilities',
+      'companies': 'companies'
     };
     
     return methodMap[collectionName] || 'skills';
+  }
+  
+  private shouldUseTargetAttributes(seedContact: Contact, targetType: ContactType): boolean {
+    if (targetType === 'founder') {
+      // investors (or both acting as investors) targeting founders should use target_* arrays
+      return seedContact.contact_type === 'investor' || seedContact.contact_type === 'both';
+    }
+    return false;
   }
 }
 

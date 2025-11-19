@@ -2,6 +2,8 @@ import { collections, db } from '../config/firebase';
 import { Introduction, IntroStage, INTRO_STAGES } from '../models/introduction.model';
 import { Timestamp } from 'firebase-admin/firestore';
 import { metricsService } from '../observability/metrics.service';
+import { StageCounts } from '../models/contact.model';
+import { deriveActionStatus } from '../utils/action-status';
 
 interface StageUpdate {
   targetId: string;
@@ -63,7 +65,10 @@ export class IntroductionService {
         entries.forEach(([stage, change]) => {
           updatedCounts[stage] = Math.max(0, (updatedCounts[stage] ?? 0) + change);
         });
-        tx.update(contactRef, { stage_counts: updatedCounts });
+        tx.update(contactRef, { 
+          stage_counts: updatedCounts, 
+          action_status: deriveActionStatus(updatedCounts as StageCounts)
+        });
       });
       metricsService.increment('introductions.stage_count.updated', entries.length, { ownerId });
     } catch (error) {
@@ -100,7 +105,10 @@ export class IntroductionService {
       return counts;
     }
 
-    await contactRef.set({ stage_counts: counts }, { merge: true });
+    await contactRef.set({
+      stage_counts: counts,
+      action_status: deriveActionStatus(counts as StageCounts)
+    }, { merge: true });
     metricsService.increment('introductions.stage_count.recomputed', 1, {
       ownerId,
       totalIntros: snapshot.size,

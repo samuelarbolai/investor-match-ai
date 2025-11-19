@@ -33,12 +33,16 @@ export const collections = {
   industries: () => db.collection(COLLECTIONS.INDUSTRIES),
   verticals: () => db.collection(COLLECTIONS.VERTICALS),
   productTypes: () => db.collection(COLLECTIONS.PRODUCT_TYPES),
+  raisedCapitalRanges: () => db.collection(COLLECTIONS.RAISED_CAPITAL_RANGES),
   fundingStages: () => db.collection(COLLECTIONS.FUNDING_STAGES),
   companyHeadcountRanges: () => db.collection(COLLECTIONS.COMPANY_HEADCOUNT_RANGES),
   engineeringHeadcountRanges: () => db.collection(COLLECTIONS.ENGINEERING_HEADCOUNT_RANGES),
   targetDomains: () => db.collection(COLLECTIONS.TARGET_DOMAINS),
   roles: () => db.collection(COLLECTIONS.ROLES),
-  companies: () => db.collection(COLLECTIONS.COMPANIES)
+  distributionCapabilities: () => db.collection(COLLECTIONS.DISTRIBUTION_CAPABILITIES),
+  targetCriteria: () => db.collection(COLLECTIONS.TARGET_CRITERIA),
+  companies: () => db.collection(COLLECTIONS.COMPANIES),
+  experiences: () => db.collection(COLLECTIONS.EXPERIENCES)
 };
 
 /**

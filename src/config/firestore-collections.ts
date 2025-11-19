@@ -21,7 +21,10 @@ export const COLLECTIONS = {
   /** Product types reverse index */
   PRODUCT_TYPES: 'productTypes',
   
-  /** Funding stages reverse index */
+  /** Raised capital range reverse index */
+  RAISED_CAPITAL_RANGES: 'raisedCapitalRanges',
+  
+  /** Legacy funding stages reverse index (deprecated) */
   FUNDING_STAGES: 'fundingStages',
   
   /** Company headcount ranges reverse index */
@@ -36,8 +39,17 @@ export const COLLECTIONS = {
   /** Roles reverse index */
   ROLES: 'roles',
   
-  /** Optional companies collection */
-  COMPANIES: 'companies'
+  /** Distribution capability collection */
+  DISTRIBUTION_CAPABILITIES: 'distributionCapabilities',
+  
+  /** Target criterion collection */
+  TARGET_CRITERIA: 'targetCriteria',
+  
+  /** Companies collection */
+  COMPANIES: 'companies',
+  
+  /** Experiences collection */
+  EXPERIENCES: 'experiences'
 } as const;
 
 /**

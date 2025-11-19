@@ -26,7 +26,10 @@ export const COLLECTIONS = {
   /** Product types reverse index */
   PRODUCT_TYPES: 'productTypes',
   
-  /** Funding stages reverse index */
+  /** Raised capital range reverse index */
+  RAISED_CAPITAL_RANGES: 'raisedCapitalRanges',
+  
+  /** Legacy funding stages reverse index (deprecated) */
   FUNDING_STAGES: 'fundingStages',
   
   /** Company headcount ranges reverse index */
@@ -41,8 +44,17 @@ export const COLLECTIONS = {
   /** Roles reverse index */
   ROLES: 'roles',
   
-  /** Optional companies collection */
-  COMPANIES: 'companies'
+  /** Distribution capability collection */
+  DISTRIBUTION_CAPABILITIES: 'distributionCapabilities',
+  
+  /** Target criterion collection */
+  TARGET_CRITERIA: 'targetCriteria',
+  
+  /** Companies collection */
+  COMPANIES: 'companies',
+  
+  /** Experiences collection */
+  EXPERIENCES: 'experiences'
 } as const;
 
 /**
@@ -58,10 +70,14 @@ export const collections = {
   industries: () => db.collection(COLLECTIONS.INDUSTRIES),
   verticals: () => db.collection(COLLECTIONS.VERTICALS),
   productTypes: () => db.collection(COLLECTIONS.PRODUCT_TYPES),
+  raisedCapitalRanges: () => db.collection(COLLECTIONS.RAISED_CAPITAL_RANGES),
   fundingStages: () => db.collection(COLLECTIONS.FUNDING_STAGES),
   companyHeadcountRanges: () => db.collection(COLLECTIONS.COMPANY_HEADCOUNT_RANGES),
   engineeringHeadcountRanges: () => db.collection(COLLECTIONS.ENGINEERING_HEADCOUNT_RANGES),
   targetDomains: () => db.collection(COLLECTIONS.TARGET_DOMAINS),
   roles: () => db.collection(COLLECTIONS.ROLES),
+  distributionCapabilities: () => db.collection(COLLECTIONS.DISTRIBUTION_CAPABILITIES),
+  targetCriteria: () => db.collection(COLLECTIONS.TARGET_CRITERIA),
   companies: () => db.collection(COLLECTIONS.COMPANIES),
+  experiences: () => db.collection(COLLECTIONS.EXPERIENCES),
 };

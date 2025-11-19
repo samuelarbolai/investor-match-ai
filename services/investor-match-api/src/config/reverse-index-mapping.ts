@@ -36,7 +36,13 @@ export const REVERSE_INDEX_MAPPING = {
     edgeName: '_PRODUCES'
   },
   
-  /** Funding stages field maps to fundingStages collection */
+  /** Raised capital ranges field maps to raisedCapitalRanges collection */
+  raised_capital_range_ids: {
+    collection: COLLECTIONS.RAISED_CAPITAL_RANGES,
+    edgeName: '_HAS_RAISED_RANGE'
+  },
+  
+  /** Legacy funding stages field maps to fundingStages collection */
   funding_stages: {
     collection: COLLECTIONS.FUNDING_STAGES,
     edgeName: '_HAS_RAISED'
@@ -64,6 +70,84 @@ export const REVERSE_INDEX_MAPPING = {
   roles: {
     collection: COLLECTIONS.ROLES,
     edgeName: '_HAS_ROLE'
+  },
+  
+  /** Distribution capability IDs map to distributionCapabilities collection */
+  distribution_capability_ids: {
+    collection: COLLECTIONS.DISTRIBUTION_CAPABILITIES,
+    edgeName: '_HAS_DISTRIBUTION'
+  },
+  
+  /** Target criterion IDs map to targetCriteria collection */
+  target_criterion_ids: {
+    collection: COLLECTIONS.TARGET_CRITERIA,
+    edgeName: '_TARGETS_CRITERION'
+  },
+  
+  /** Experience company IDs map to companies collection */
+  experience_company_ids: {
+    collection: COLLECTIONS.COMPANIES,
+    edgeName: '_AT_COMPANY'
+  },
+  
+  /** Target industries map to industries collection */
+  target_industries: {
+    collection: COLLECTIONS.INDUSTRIES,
+    edgeName: '_TARGETS_INDUSTRY'
+  },
+  
+  /** Target verticals map to verticals collection */
+  target_verticals: {
+    collection: COLLECTIONS.VERTICALS,
+    edgeName: '_TARGETS_VERTICAL'
+  },
+  
+  /** Target skills map to skills collection */
+  target_skills: {
+    collection: COLLECTIONS.SKILLS,
+    edgeName: '_TARGETS_SKILL'
+  },
+  
+  /** Target roles map to roles collection */
+  target_roles: {
+    collection: COLLECTIONS.ROLES,
+    edgeName: '_TARGETS_ROLE'
+  },
+  
+  /** Target product types map to productTypes collection */
+  target_product_types: {
+    collection: COLLECTIONS.PRODUCT_TYPES,
+    edgeName: '_TARGETS_PRODUCT'
+  },
+  
+  /** Target raised capital ranges */
+  target_raised_capital_range_ids: {
+    collection: COLLECTIONS.RAISED_CAPITAL_RANGES,
+    edgeName: '_TARGETS_RAISED_RANGE'
+  },
+  
+  /** Target company headcount ranges */
+  target_company_headcount_ranges: {
+    collection: COLLECTIONS.COMPANY_HEADCOUNT_RANGES,
+    edgeName: '_TARGETS_HEADCOUNT'
+  },
+  
+  /** Target engineering headcount ranges */
+  target_engineering_headcount_ranges: {
+    collection: COLLECTIONS.ENGINEERING_HEADCOUNT_RANGES,
+    edgeName: '_TARGETS_ENGINEERING_HEADCOUNT'
+  },
+  
+  /** Target distribution capabilities */
+  target_distribution_capability_ids: {
+    collection: COLLECTIONS.DISTRIBUTION_CAPABILITIES,
+    edgeName: '_TARGETS_DISTRIBUTION'
+  },
+  
+  /** Target company IDs */
+  target_company_ids: {
+    collection: COLLECTIONS.COMPANIES,
+    edgeName: '_TARGETS_COMPANY'
   }
 } as const;
 

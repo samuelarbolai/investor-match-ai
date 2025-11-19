@@ -421,6 +421,23 @@ Since contact-service already has all the functionality:
 - [ ] Test with invalid data
 - [ ] Verify error messages are clear
 
+### Testing Plan for Schema v2 (Nov 2025)
+To validate the newly added company/experience nodes, target intent arrays, and action-status logic, run the following cycle on the `feature/firestore-schema-overhaul` branch:
+
+1. **Dataset preparation**
+   - `npm run clear:firestore` → `npm run seed:vocabs` → `npm run seed:coverage-contacts` → `npm run backfill:nodes` against the dev Firestore project to ensure every vocab entry, company, and experience is represented.
+2. **Unit tests**
+   - Extend Jest suites for `flatteningService`, `companySyncService`, and `matching.service` to cover target arrays, action-status derivation, and company syncing.
+   - Gate changes with `npm run test`, `npm run test:unit`, `npm run test:coverage` (target ≥80%).
+3. **Integration tests**
+   - Use the Firestore emulator to run CRUD + matching flows that assert `/companies` + `/experiences` documents are created, `target_*` fields round-trip through `/v1/contacts`, and matching respects founder-current vs investor-target logic.
+4. **Load tests**
+   - Update the k6 scripts with schema v2 payloads and run the Phase 5 scenarios (100 concurrent matches, 50 concurrent creations, bulk updates) ensuring p95 <2 s and 0% errors.
+5. **Manual QA**
+   - Drive the Postman collection end-to-end (create founder/investor, patch target criteria, verify action status flips to `waiting` once prospects exist, inspect `/companies` + `/experiences` collections, and rerun matches).
+   - Smoke the UI against `investor-match-ai-dev` to confirm new fields render (Action Status column, company tab, upcoming Target Criterion tab).
+
+Document results (logs + screenshots) in `docs/testing-plan-v2.md` before promoting the branch.
 ---
 
 ## Quality Assurance Plan

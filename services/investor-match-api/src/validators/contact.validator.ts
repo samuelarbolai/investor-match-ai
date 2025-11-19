@@ -16,7 +16,8 @@ export const createContactSchema = Joi.object({
   industries: Joi.array().items(Joi.string()).default([]),
   verticals: Joi.array().items(Joi.string()).default([]),
   product_types: Joi.array().items(Joi.string()).default([]),
-  funding_stages: Joi.array().items(Joi.string()).default([]),
+  funding_stages: Joi.array().items(Joi.string()).default([]), // legacy
+  raised_capital_range_ids: Joi.array().items(Joi.string()).default([]),
   company_headcount_ranges: Joi.array().items(Joi.string()).default([]),
   engineering_headcount_ranges: Joi.array().items(Joi.string()).default([]),
   founder_roles: Joi.array().items(Joi.string()).default([]),
@@ -34,9 +35,32 @@ export const createContactSchema = Joi.object({
   engineering_headcount_preferences: Joi.array().items(Joi.string()).default([]),
   revenue_model_preferences: Joi.array().items(Joi.string()).default([]),
   risk_tolerance_preferences: Joi.array().items(Joi.string()).default([]),
+  distribution_capability_ids: Joi.array().items(Joi.string()).default([]),
+  distribution_capability_labels: Joi.array().items(Joi.string()).default([]),
+  target_criterion_ids: Joi.array().items(Joi.string()).default([]),
+  target_criterion_summaries: Joi.array().items(Joi.string()).default([]),
+  target_industries: Joi.array().items(Joi.string()).default([]),
+  target_verticals: Joi.array().items(Joi.string()).default([]),
+  target_skills: Joi.array().items(Joi.string()).default([]),
+  target_roles: Joi.array().items(Joi.string()).default([]),
+  target_product_types: Joi.array().items(Joi.string()).default([]),
+  target_raised_capital_range_ids: Joi.array().items(Joi.string()).default([]),
+  target_raised_capital_range_labels: Joi.array().items(Joi.string()).default([]),
+  target_company_headcount_ranges: Joi.array().items(Joi.string()).default([]),
+  target_engineering_headcount_ranges: Joi.array().items(Joi.string()).default([]),
+  target_distribution_capability_ids: Joi.array().items(Joi.string()).default([]),
+  target_distribution_capability_labels: Joi.array().items(Joi.string()).default([]),
+  target_location_cities: Joi.array().items(Joi.string()).default([]),
+  target_location_countries: Joi.array().items(Joi.string()).default([]),
+  target_foundation_years: Joi.array().items(Joi.string()).default([]),
+  target_mrr_ranges: Joi.array().items(Joi.string()).default([]),
+  target_company_ids: Joi.array().items(Joi.string()).default([]),
+  experience_company_ids: Joi.array().items(Joi.string()).default([]),
+  action_status: Joi.string().valid('action_required', 'waiting').default('action_required'),
   
   // Optional fields
   current_company: Joi.string().max(100).allow(null),
+  current_company_id: Joi.string().max(100).allow(null),
   current_role: Joi.string().max(100).allow(null),
   linkedin_url: Joi.string().uri().allow(null),
   email: Joi.string().email().allow(null),
@@ -54,6 +78,43 @@ export const createContactSchema = Joi.object({
       description: Joi.string().allow(null),
       location_city: Joi.string().allow(null),
       location_country: Joi.string().allow(null)
+    })
+  ).default([]),
+
+  // Distribution capabilities payload (normalized later)
+  distribution_capabilities: Joi.array().items(
+    Joi.object({
+      distribution_type: Joi.string().required(),
+      label: Joi.string().allow('').optional(),
+      size_score: Joi.number().min(0).max(1).allow(null),
+      engagement_score: Joi.number().min(0).max(1).allow(null),
+      quality_score: Joi.number().min(0).max(1).allow(null),
+      source_url: Joi.string().uri().allow(null)
+    })
+  ).default([]),
+
+  // Target criteria payload (normalized later)
+  target_criteria: Joi.array().items(
+    Joi.object({
+      dimension: Joi.string().required(),
+      operator: Joi.string().valid('=', 'in', '>=', '<=', 'between').required(),
+      value: Joi.alternatives().try(
+        Joi.string(),
+        Joi.number(),
+        Joi.array().items(Joi.string()),
+        Joi.array().length(2).items(Joi.number())
+      ).required(),
+      label: Joi.string().optional()
+    })
+  ).default([]),
+
+  companies: Joi.array().items(
+    Joi.object({
+      name: Joi.string().required(),
+      domain: Joi.string().allow(null),
+      description: Joi.string().allow(null),
+      linkedin_url: Joi.string().uri().allow(null),
+      crunchbase_url: Joi.string().uri().allow(null)
     })
   ).default([])
 });

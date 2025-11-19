@@ -6,6 +6,7 @@ import { IntroStage } from './introduction.model';
  * Contact type enum - founder, investor, or both
  */
 export type ContactType = 'founder' | 'investor' | 'both';
+export type ActionStatus = 'action_required' | 'waiting';
 
 /**
  * Complete Contact interface matching Firestore schema
@@ -36,6 +37,9 @@ export interface Contact {
   /** Current company name (nullable) */
   current_company: string | null;
   
+  /** Current company normalized ID (nullable) */
+  current_company_id: string | null;
+  
   /** Current role (nullable) */
   current_role: string | null;
   
@@ -60,8 +64,14 @@ export interface Contact {
   /** Product types array - maps to productTypes collection */
   product_types: string[];
   
-  /** Funding stages array - maps to fundingStages collection */
-  funding_stages: string[];
+  /** Raised capital range IDs - maps to raisedCapitalRanges collection */
+  raised_capital_range_ids: string[];
+  
+  /** Raised capital range labels for flattened reads */
+  raised_capital_range_labels: string[];
+  
+  /** Legacy funding stages array (deprecated) */
+  funding_stages?: string[];
   
   /** Company headcount ranges array - maps to companyHeadcountRanges collection */
   company_headcount_ranges: string[];
@@ -99,8 +109,74 @@ export interface Contact {
   /** Risk tolerance preferences array */
   risk_tolerance_preferences: string[];
   
+  /** Distribution capability IDs - maps to distributionCapabilities collection */
+  distribution_capability_ids: string[];
+  
+  /** Distribution capability labels for flattened reads */
+  distribution_capability_labels: string[];
+  
+  /** Target criterion IDs - maps to targetCriteria collection */
+  target_criterion_ids: string[];
+  
+  /** Human-readable target criterion summaries */
+  target_criterion_summaries: string[];
+  
+  /** Targeted industries from investor thesis */
+  target_industries: string[];
+  
+  /** Targeted verticals from investor thesis */
+  target_verticals: string[];
+  
+  /** Targeted skills */
+  target_skills: string[];
+  
+  /** Targeted roles */
+  target_roles: string[];
+  
+  /** Targeted product types */
+  target_product_types: string[];
+  
+  /** Targeted raised capital range IDs */
+  target_raised_capital_range_ids: string[];
+  
+  /** Targeted raised capital labels */
+  target_raised_capital_range_labels: string[];
+  
+  /** Targeted company headcount ranges */
+  target_company_headcount_ranges: string[];
+  
+  /** Targeted engineering headcount ranges */
+  target_engineering_headcount_ranges: string[];
+  
+  /** Targeted distribution capability IDs */
+  target_distribution_capability_ids: string[];
+  
+  /** Targeted distribution capability labels */
+  target_distribution_capability_labels: string[];
+  
+  /** Targeted location cities */
+  target_location_cities: string[];
+  
+  /** Targeted location countries */
+  target_location_countries: string[];
+  
+  /** Targeted foundation years */
+  target_foundation_years: string[];
+  
+  /** Targeted MRR ranges */
+  target_mrr_ranges: string[];
+  
+  /** Targeted company IDs */
+  target_company_ids: string[];
+  
   /** Embedded experiences array */
   experiences: Experience[];
+  
+  /** Flattened experience company IDs */
+  experience_company_ids: string[];
+  
+  /** Action status flag to highlight funnel needs */
+  action_status: ActionStatus;
   
   /** LinkedIn URL (nullable) */
   linkedin_url: string | null;
