@@ -583,6 +583,15 @@ export class ContactHandler {
    *               location_country:
    *                 type: string
    *                 description: Filter by country
+   *               company_names:
+   *                 type: array
+   *                 items:
+   *                   type: string
+   *                 description: Company names to match (current or previous employers)
+   *               company_scope:
+   *                 type: string
+   *                 enum: [current, experience, any]
+   *                 description: Limit company filtering to current company, experiences, or both (default any)
    *               match_mode:
    *                 type: string
    *                 enum: [any, all]
@@ -609,6 +618,8 @@ export class ContactHandler {
    *                 contact_type: "investor"
    *                 industries: ["fintech"]
    *                 location_city: "San Francisco"
+   *                 company_names: ["OpenAI"]
+   *                 company_scope: "experience"
    *                 match_mode: "all"
    *                 limit: 20
    *     responses:
@@ -641,6 +652,8 @@ export class ContactHandler {
         match_mode = 'any',
         limit = 20,
         stage_count_filters,
+        company_names,
+        company_scope
       } = req.body;
 
       const result = await matchingService.filterContacts({
@@ -654,6 +667,8 @@ export class ContactHandler {
         match_mode,
         limit: Math.min(parseInt(limit as string, 10), 100),
         stage_count_filters,
+        company_names,
+        company_scope
       });
 
       res.json(result);

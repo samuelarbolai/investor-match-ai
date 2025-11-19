@@ -14,6 +14,7 @@
 - **Phase 6 COMPLETED**: 2025-11-14T19:20 -05:00 - CI/CD Pipeline implemented and deployed
 - **Architecture Consolidation COMPLETED**: 2025-11-14T19:55 -05:00 - Consolidated to monolith architecture
 - **Phase 7 Milestone 7.1 COMPLETED**: 2025-11-14T20:10 -05:00 - Documentation & Handoff completed
+- **Contact normalization update**: 2025-11-19T02:56 -05:00 - Auto-create companies/target criteria on contact CRUD and extended `/v1/contacts/filter` with company-name scope
 
 ### Phase 1 Deliverables ✅
 - Git repository initialized with .gitignore

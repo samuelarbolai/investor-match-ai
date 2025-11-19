@@ -2,6 +2,7 @@ import { collections } from '../config/firebase';
 import { Contact, ContactType, StageCounts } from '../models/contact.model';
 import { IntroStage, INTRO_STAGES } from '../models/introduction.model';
 import { REVERSE_INDEX_MAPPING, REVERSE_INDEX_FIELDS } from '../config/reverse-index-mapping';
+import { ensureValidDocumentId } from '../utils/document-id';
 
 export interface MatchResult {
   candidates: MatchCandidate[];
@@ -33,6 +34,8 @@ export interface FilterCriteria {
   match_mode?: 'any' | 'all';
   limit?: number;
   stage_count_filters?: StageCountFilters;
+  company_names?: string[];
+  company_scope?: CompanyScope;
 }
 
 export interface FilterResult {
@@ -56,6 +59,7 @@ interface StageCountRange {
 }
 
 type StageCountFilters = Partial<Record<IntroStage, StageCountRange>>;
+type CompanyScope = 'current' | 'experience' | 'any';
 
 export class MatchingService {
   
@@ -75,8 +79,14 @@ export class MatchingService {
       location_country,
       match_mode = 'any',
       limit = 20,
-      stage_count_filters
+      stage_count_filters,
+      company_names,
+      company_scope
     } = criteria;
+
+    const normalizedCompanyNames = this.normalizeCompanyNames(company_names);
+    const normalizedCompanySlugs = normalizedCompanyNames.map(name => ensureValidDocumentId(name));
+    const normalizedCompanyScope = this.normalizeCompanyScope(company_scope);
 
     // Collect candidate contact IDs from reverse indexes
     const candidateScores: Map<string, number> = new Map();
@@ -174,6 +184,10 @@ export class MatchingService {
           if (!matchesAll) continue;
         }
 
+        if (!this.matchesCompanyFilter(contact, normalizedCompanyNames, normalizedCompanySlugs, normalizedCompanyScope)) {
+          continue;
+        }
+
         if (!this.matchesStageCountFilters(contact.stage_counts, stage_count_filters)) {
           continue;
         }
@@ -191,6 +205,99 @@ export class MatchingService {
       total: filteredContacts.length,
       filters_applied: criteria
     };
+  }
+
+  private normalizeCompanyNames(names?: string[]): string[] {
+    if (!names) {
+      return [];
+    }
+    return names
+      .map(name => (typeof name === 'string' ? name.trim().toLowerCase() : ''))
+      .filter((name): name is string => Boolean(name));
+  }
+
+  private normalizeCompanyScope(scope?: string): CompanyScope {
+    if (!scope) {
+      return 'any';
+    }
+    const lowered = scope.toLowerCase() as CompanyScope;
+    return ['current', 'experience', 'any'].includes(lowered) ? lowered : 'any';
+  }
+
+  private matchesCompanyFilter(
+    contact: Contact,
+    companyNames: string[],
+    companySlugs: string[],
+    scope: CompanyScope
+  ): boolean {
+    if (companyNames.length === 0) {
+      return true;
+    }
+
+    const matchesCurrent = this.matchesSingleCompany(
+      contact.current_company,
+      contact.current_company_id,
+      companyNames,
+      companySlugs
+    );
+
+    const matchesExperience = this.hasExperienceCompanyMatch(
+      contact,
+      companyNames,
+      companySlugs
+    );
+
+    switch (scope) {
+      case 'current':
+        return matchesCurrent;
+      case 'experience':
+        return matchesExperience;
+      default:
+        return matchesCurrent || matchesExperience;
+    }
+  }
+
+  private matchesSingleCompany(
+    name: string | null | undefined,
+    id: string | null | undefined,
+    companyNames: string[],
+    companySlugs: string[]
+  ): boolean {
+    const normalizedName = this.normalizeCompanyName(name);
+    if (normalizedName && companyNames.includes(normalizedName)) {
+      return true;
+    }
+
+    const candidateSlug = id || (normalizedName ? ensureValidDocumentId(normalizedName) : null);
+    return candidateSlug ? companySlugs.includes(candidateSlug) : false;
+  }
+
+  private hasExperienceCompanyMatch(
+    contact: Contact,
+    companyNames: string[],
+    companySlugs: string[]
+  ): boolean {
+    const experienceMatch = (contact.experiences || []).some(exp =>
+      this.matchesSingleCompany(exp.company_name, exp.company_id, companyNames, companySlugs)
+    );
+
+    if (experienceMatch) {
+      return true;
+    }
+
+    const pastMatches = (contact.past_companies || []).some(name =>
+      this.matchesSingleCompany(name, name ? ensureValidDocumentId(name) : null, companyNames, companySlugs)
+    );
+
+    return pastMatches;
+  }
+
+  private normalizeCompanyName(name?: string | null): string | null {
+    if (typeof name !== 'string') {
+      return null;
+    }
+    const normalized = name.trim().toLowerCase();
+    return normalized.length ? normalized : null;
   }
 
   private matchesStageCountFilters(

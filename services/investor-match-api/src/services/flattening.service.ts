@@ -75,19 +75,38 @@ export class FlatteningService {
 
   private normalizeCompanies(payload: FlatteningPayload): Company[] {
     const provided: CompanyInput[] = payload.companies || [];
-    const fromContact: CompanyInput[] = payload.contact.current_company
-      ? [{
+
+    const inferredFromContact: CompanyInput[] = [];
+    if (payload.contact.current_company) {
+      inferredFromContact.push({
         name: payload.contact.current_company,
         domain: payload.contact.current_company_id ?? null,
         industries: payload.contact.industries,
         verticals: payload.contact.verticals
-      }]
+      });
+    }
+
+    const pastCompanies = Array.isArray(payload.contact.past_companies)
+      ? payload.contact.past_companies.map(name => ({ name }))
       : [];
 
-    const unique = [...provided, ...fromContact];
+    const experienceCompanies = (payload.experiences || [])
+      .filter(exp => Boolean(exp.company_name))
+      .map(exp => ({
+        name: exp.company_name!,
+        domain: exp.company_id ?? null
+      }));
+
+    const combined = [
+      ...provided,
+      ...inferredFromContact,
+      ...pastCompanies,
+      ...experienceCompanies
+    ];
+
     const seen = new Set<string>();
 
-    return unique
+    return combined
       .filter(company => Boolean(company?.name))
       .map(company => {
         const id = ensureValidDocumentId(company!.name);

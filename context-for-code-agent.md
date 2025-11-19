@@ -78,6 +78,8 @@
 - **Integration**: Firestore emulator setup
 - **Load Testing**: k6 scripts with performance benchmarks
 - **Schema v2 test plan**: see `docs/testing-plan-v2.md` for the full pre-release checklist (dataset seeding, unit/integration/load/manual QA)
+- **Firestore Emulator**: requires Java + `firebase-tools`; start via `npm run emulator:start` (runs on localhost:8080) then export `FIRESTORE_EMULATOR_HOST=localhost:8080` and `FIREBASE_PROJECT_ID=test-project` before running `npm run test:integration:emulator` or `npm run dev`.
+- **Production Seeding**: Prod now mirrors dev coverage—ran `npm run seed:vocabs`, `npm run seed:coverage-contacts`, `npm run backfill:nodes`, and `npm run recompute:stage-counts` with prod creds so every vocab/node has at least one contact. Re-run the same sequence for future refreshes (no `clear:firestore` in prod).
 
 ## Key Files Structure
 ```

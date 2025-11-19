@@ -8,6 +8,7 @@ describe('FlatteningService', () => {
         headline: 'CEO',
         contact_type: 'founder',
         current_company: 'Acme Inc',
+        past_companies: ['Legacy Labs'],
         industries: ['fintech'],
         verticals: ['b2b']
       } as any,
@@ -38,17 +39,30 @@ describe('FlatteningService', () => {
           description: null,
           location_city: null,
           location_country: null
+        },
+        {
+          company_name: 'Side Project Co',
+          company_id: null,
+          role: 'Advisor',
+          seniority: 'senior',
+          start_date: '2018-01',
+          end_date: '2019-12',
+          current: false,
+          description: null,
+          location_city: null,
+          location_country: null
         }
       ]
     };
 
     const result = flatteningService.flatten(payload);
 
-    expect(result.companies).toHaveLength(2);
+    const companyIds = result.companies.map(company => company.id).sort();
+    expect(companyIds).toEqual(['acme_inc', 'beta_corp', 'legacy_labs', 'side_project_co']);
     expect(result.contactUpdates.current_company_id).toBe('acme_inc');
     expect(result.distributionCapabilities[0].id).toContain('newsletter');
     expect(result.contactUpdates.raised_capital_range_labels).toEqual(['Seed Round']);
-    expect(result.experienceCompanyIds).toEqual(['acme_inc']);
+    expect(result.experienceCompanyIds.sort()).toEqual(['acme_inc', 'side_project_co']);
   });
 
   it('denormalizes target criteria into thesis arrays and location filters', () => {

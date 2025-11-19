@@ -269,4 +269,78 @@ describe('MatchingService', () => {
         .rejects.toThrow('Contact missing not found');
     });
   });
+
+  describe('filterContacts', () => {
+    test('filters by previous experience company names', async () => {
+      const experienced = buildContact({
+        id: 'contact-exp',
+        full_name: 'Experience Heavy',
+        contact_type: 'founder',
+        current_company: 'Now Co',
+        experiences: [
+          {
+            company_name: 'Legacy Labs',
+            company_id: null,
+            role: 'Engineer',
+            seniority: 'senior',
+            start_date: '2018-01',
+            end_date: '2020-01',
+            current: false,
+            description: null,
+            location_city: null,
+            location_country: null
+          }
+        ],
+        past_companies: ['Another Startup']
+      });
+
+      const other = buildContact({
+        id: 'contact-other',
+        full_name: 'Other Person',
+        contact_type: 'founder',
+        current_company: 'Different Co',
+        experiences: [],
+        past_companies: []
+      });
+
+      __setMockContact(experienced.id, experienced);
+      __setMockContact(other.id, other);
+
+      const result = await matchingService.filterContacts({
+        company_names: ['legacy labs'],
+        company_scope: 'experience'
+      });
+
+      expect(result.data).toHaveLength(1);
+      expect(result.data[0].id).toBe(experienced.id);
+    });
+
+    test('filters by current company names case-insensitively', async () => {
+      const contact = buildContact({
+        id: 'contact-current',
+        full_name: 'Current Company',
+        contact_type: 'investor',
+        current_company: 'OpenAI',
+        current_company_id: 'openai'
+      });
+
+      const other = buildContact({
+        id: 'contact-miss',
+        full_name: 'Missing Match',
+        contact_type: 'investor',
+        current_company: 'Another Co'
+      });
+
+      __setMockContact(contact.id, contact);
+      __setMockContact(other.id, other);
+
+      const result = await matchingService.filterContacts({
+        company_names: ['openai'],
+        company_scope: 'current'
+      });
+
+      expect(result.data).toHaveLength(1);
+      expect(result.data[0].id).toBe(contact.id);
+    });
+  });
 });

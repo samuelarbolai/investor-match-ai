@@ -46,6 +46,7 @@
 - [ ] Create alerts for errors and high latency
 - [ ] Add custom metrics (match query duration, contact creation rate)
 - [ ] Document runbook for common issues
+- [ ] Confirm contact CRUD auto-creates normalized companies/target criteria and that `/v1/contacts/filter` supports company-name filters before UI phase
 
 **Deliverables:**
 - GCP monitoring dashboard
