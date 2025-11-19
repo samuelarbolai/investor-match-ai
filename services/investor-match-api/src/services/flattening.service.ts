@@ -98,7 +98,7 @@ export class FlatteningService {
     }
 
     const pastCompanies = Array.isArray(payload.contact.past_companies)
-      ? payload.contact.past_companies.map(name => ({ name }))
+      ? payload.contact.past_companies.map(name => ({ name } as CompanyInput))
       : [];
 
     const experienceCompanies = (payload.experiences || [])
