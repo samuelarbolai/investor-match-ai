@@ -31,7 +31,9 @@ export const options = {
 };
 
 // 📚 LESSON: Base URL - change this to your deployed service
-const BASE_URL = 'https://investor-match-ai-contact-service-23715448976.us-central1.run.app';
+const BASE_URL = 'https://investor-match-api-23715448976.us-east1.run.app';
+const ownerPool = [];
+const investorPool = [];
 
 // 📚 LESSON: Test data templates
 const founderTemplate = {
@@ -66,7 +68,6 @@ const investorTemplate = {
 
 export default function () {
   // 📚 LESSON: Each virtual user runs this function repeatedly
-  
   const userId = Math.floor(Math.random() * 10000);
   
   // Test 1: Create a contact (70% of requests)
@@ -90,7 +91,14 @@ export default function () {
     
     // If contact created successfully, test retrieval
     if (createResponse.status === 201) {
-      const contactId = JSON.parse(createResponse.body).id;
+      const body = JSON.parse(createResponse.body);
+      const contactId = body.id;
+
+      if (isFounder) {
+        ownerPool.push(contactId);
+      } else {
+        investorPool.push(contactId);
+      }
       
       sleep(0.5); // Brief pause between operations
       
@@ -106,6 +114,47 @@ export default function () {
       
       sleep(0.5);
       
+      // Simulate pipeline updates between founders & investors
+      if (ownerPool.length > 0 && investorPool.length > 0) {
+        const ownerId = ownerPool[Math.floor(Math.random() * ownerPool.length)];
+        const targetId = investorPool[Math.floor(Math.random() * investorPool.length)];
+        const stageResponse = http.post(`${BASE_URL}/v1/introductions/stage`, JSON.stringify({
+          ownerId,
+          targetId,
+          stage: Math.random() > 0.5 ? 'lead' : 'prospect'
+        }), {
+          headers: { 'Content-Type': 'application/json' }
+        });
+        errorRate.add(stageResponse.status !== 201);
+      }
+
+      if (ownerPool.length >= 1 && Math.random() < 0.4) {
+        const ownerId = ownerPool[Math.floor(Math.random() * ownerPool.length)];
+        const summaryResponse = http.get(`${BASE_URL}/v1/introductions/stage/summary?ownerId=${ownerId}`);
+        errorRate.add(summaryResponse.status !== 200);
+      }
+
+      if (ownerPool.length >= 1 && investorPool.length >= 2 && Math.random() < 0.3) {
+        const ownerId = ownerPool[Math.floor(Math.random() * ownerPool.length)];
+        const updates = investorPool.slice(-2).map(targetId => ({
+          targetId,
+          stage: Math.random() > 0.5 ? 'met' : 'to-meet'
+        }));
+        const bulkResponse = http.post(`${BASE_URL}/v1/introductions/stages/bulk-update`, JSON.stringify({
+          ownerId,
+          updates
+        }), { headers: { 'Content-Type': 'application/json' } });
+        errorRate.add(bulkResponse.status !== 204);
+      }
+
+      if (ownerPool.length > 0 && Math.random() < 0.2) {
+        const ownerId = ownerPool[Math.floor(Math.random() * ownerPool.length)];
+        const recomputeResponse = http.post(`${BASE_URL}/v1/introductions/stage/recompute`, JSON.stringify({ ownerId }), {
+          headers: { 'Content-Type': 'application/json' }
+        });
+        errorRate.add(recomputeResponse.status !== 200);
+      }
+
       // Test 3: Find matches (30% chance)
       if (Math.random() < 0.3) {
         const targetType = isFounder ? 'investor' : 'founder';

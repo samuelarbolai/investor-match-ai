@@ -320,5 +320,33 @@ describe('IntroductionService', () => {
       expect(counts.lead).toBe(2);
       expect(counts.prospect).toBe(1);
     });
+
+    it('handles missing owner contacts without throwing', async () => {
+      const ownerId = 'missing-owner';
+      ((collections.introductions) as jest.Mock).mockReturnValue({
+        where: jest.fn().mockReturnThis(),
+        get: jest.fn().mockResolvedValue({ docs: [] }),
+        doc: jest.fn(),
+      });
+
+      const contactRef = {
+        get: jest.fn().mockResolvedValue({ exists: false }),
+        set: jest.fn(),
+      };
+      ((collections.contacts) as jest.Mock).mockReturnValue({
+        doc: jest.fn().mockReturnValue(contactRef),
+      });
+
+      const counts = await introductionService.recalculateStageCounts(ownerId);
+
+      expect(contactRef.set).not.toHaveBeenCalled();
+      const metricsMock = metricsService as jest.Mocked<typeof metricsService>;
+      expect(metricsMock.increment).toHaveBeenCalledWith(
+        'introductions.stage_count.recompute_missing_contact',
+        1,
+        expect.objectContaining({ ownerId })
+      );
+      expect(counts.prospect).toBe(0);
+    });
   });
 });

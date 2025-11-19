@@ -11,6 +11,8 @@ import { Trend } from 'k6/metrics';
 const contactCreationTime = new Trend('contact_creation_duration');
 const matchingTime = new Trend('matching_duration');
 const contactRetrievalTime = new Trend('contact_retrieval_duration');
+const introductionStageTime = new Trend('introductions_stage_duration');
+const introductionSummaryTime = new Trend('introductions_summary_duration');
 
 export const options = {
   scenarios: {
@@ -34,13 +36,17 @@ export const options = {
     contact_creation_duration: ['p(95)<3000', 'p(50)<1500'], // 95% under 3s, 50% under 1.5s
     matching_duration: ['p(95)<5000', 'p(50)<2000'],         // 95% under 5s, 50% under 2s
     contact_retrieval_duration: ['p(95)<1000', 'p(50)<500'], // 95% under 1s, 50% under 0.5s
+    introductions_stage_duration: ['p(95)<2000'],
+    introductions_summary_duration: ['p(95)<1500'],
   },
 };
 
-const BASE_URL = 'https://investor-match-ai-contact-service-23715448976.us-central1.run.app';
+const BASE_URL = 'https://investor-match-api-23715448976.us-east1.run.app';
 
 // 📚 LESSON: Pre-created contacts for matching tests
 let existingContacts = [];
+let ownerContacts = [];
+let investorContacts = [];
 
 export function setup() {
   // 📚 LESSON: Setup phase - create some contacts for matching tests
@@ -67,12 +73,18 @@ export function setup() {
     });
     
     if (response.status === 201) {
-      existingContacts.push(JSON.parse(response.body).id);
+      const id = JSON.parse(response.body).id;
+      existingContacts.push(id);
+      if (contactData.contact_type === 'founder') {
+        ownerContacts.push(id);
+      } else {
+        investorContacts.push(id);
+      }
     }
   }
   
   console.log(`Created ${existingContacts.length} contacts for benchmarking`);
-  return { contactIds: existingContacts };
+  return { contactIds: existingContacts, owners: ownerContacts, investors: investorContacts };
 }
 
 export default function (data) {
@@ -82,8 +94,8 @@ export default function (data) {
     // 📚 LESSON: Benchmark contact creation performance
     benchmarkContactCreation();
   } else if (testType === 'matching_benchmark') {
-    // 📚 LESSON: Benchmark matching performance
-    benchmarkMatching(data.contactIds);
+    // 📚 LESSON: Benchmark matching performance + introduction workflows
+    benchmarkMatching(data);
   }
 }
 
@@ -135,7 +147,8 @@ function benchmarkContactCreation() {
   }
 }
 
-function benchmarkMatching(contactIds) {
+function benchmarkMatching(data) {
+  const { contactIds, owners, investors } = data;
   if (!contactIds || contactIds.length === 0) {
     console.log('No contacts available for matching benchmark');
     return;
@@ -158,6 +171,35 @@ function benchmarkMatching(contactIds) {
       return body.candidates !== undefined && body.seedContact !== undefined;
     },
   });
+  if (owners && owners.length && investors && investors.length) {
+    triggerIntroductionWorkflow(owners, investors);
+  }
+}
+
+function triggerIntroductionWorkflow(owners, investors) {
+  const ownerId = owners[Math.floor(Math.random() * owners.length)];
+  const targetId = investors[Math.floor(Math.random() * investors.length)];
+
+  const stageStart = Date.now();
+  const stageResponse = http.post(`${BASE_URL}/v1/introductions/stage`, JSON.stringify({
+    ownerId,
+    targetId,
+    stage: 'lead'
+  }), {
+    headers: { 'Content-Type': 'application/json' }
+  });
+  introductionStageTime.add(Date.now() - stageStart);
+
+  const summaryStart = Date.now();
+  const summaryResponse = http.get(`${BASE_URL}/v1/introductions/stage/summary?ownerId=${ownerId}`);
+  introductionSummaryTime.add(Date.now() - summaryStart);
+
+  check(stageResponse, {
+    'introduction stage update successful': (r) => r.status === 201
+  });
+  check(summaryResponse, {
+    'introduction summary successful': (r) => r.status === 200
+  });
 }
 
 export function teardown(data) {
@@ -169,6 +211,9 @@ export function teardown(data) {
       http.del(`${BASE_URL}/v1/contacts/${contactId}`);
     });
   }
+
+  ownerContacts = [];
+  investorContacts = [];
 }
 
 /**

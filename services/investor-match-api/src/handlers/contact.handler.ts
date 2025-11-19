@@ -3,6 +3,24 @@ import { collections, Timestamp } from '../config/firebase';
 import { Contact, ContactInput, ContactType } from '../models/contact.model';
 import { writeSyncService } from '../services/write-sync.service';
 import { matchingService } from '../services/matching.service';
+import { flatteningService } from '../services/flattening.service';
+import { DistributionCapabilityInput } from '../models/distribution-capability.model';
+import { TargetCriterionInput } from '../models/target-criterion.model';
+import { CompanyInput } from '../models/company.model';
+import { deriveActionStatus } from '../utils/action-status';
+import { companySyncService } from '../services/company-sync.service';
+import { Company } from '../models/company.model';
+
+export type ContactRequestExtras = {
+  distribution_capabilities?: DistributionCapabilityInput[];
+  target_criteria?: TargetCriterionInput[];
+  companies?: CompanyInput[];
+};
+
+interface PreparedContactPayload {
+  contact: ContactInput;
+  normalizedCompanies: Company[];
+}
 
 /**
  * @swagger
@@ -137,11 +155,11 @@ export class ContactHandler {
    */
   async createContact(req: Request, res: Response): Promise<void> {
     try {
-      const input: ContactInput = req.body;
       const contactRef = collections.contacts().doc();
+      const { contact: preparedContact, normalizedCompanies } = prepareContactPayload(req.body as ContactInput & ContactRequestExtras);
       
-      // Use WriteSyncService for proper data layer integration
-      await writeSyncService.createOrUpdateContact(contactRef.id, input, false);
+      await writeSyncService.createOrUpdateContact(contactRef.id, preparedContact, false);
+      await companySyncService.syncCompanies(contactRef.id, normalizedCompanies, preparedContact.experiences || []);
       
       // Get the created contact
       const doc = await contactRef.get();
@@ -302,6 +320,7 @@ export class ContactHandler {
   }
 }
 
+
   /**
   ## Usage:
 
@@ -442,7 +461,7 @@ export class ContactHandler {
   async updateContact(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
-      const updates: Partial<ContactInput> = req.body;
+      const updates = req.body as Partial<ContactInput> & ContactRequestExtras;
       
       // Check if contact exists
       const doc = await collections.contacts().doc(id).get();
@@ -450,9 +469,13 @@ export class ContactHandler {
         res.status(404).json({ error: 'Contact not found' });
         return;
       }
+
+      const existing = doc.data() as Contact;
+      const { contact: preparedContact, normalizedCompanies } = prepareContactPayload(updates, existing);
       
       // Use WriteSyncService for proper reverse index sync
-      await writeSyncService.createOrUpdateContact(id, updates as ContactInput, true);
+      await writeSyncService.createOrUpdateContact(id, preparedContact, true);
+      await companySyncService.syncCompanies(id, normalizedCompanies, preparedContact.experiences || []);
       
       // Get updated contact
       const updatedDoc = await collections.contacts().doc(id).get();
@@ -934,4 +957,81 @@ export class ContactHandler {
       }
     }
   } 
+}
+
+export function prepareContactPayload(
+  payload: Partial<ContactInput> & ContactRequestExtras,
+  existing?: Contact
+): PreparedContactPayload {
+  const {
+    distribution_capabilities = [],
+    target_criteria = [],
+    companies = [],
+    ...rest
+  } = payload;
+
+  const base: ContactInput = {
+    ...(existing ? stripContactSystemFields(existing) : {}),
+    ...(rest as ContactInput)
+  };
+
+  base.experiences = base.experiences || [];
+  base.raised_capital_range_ids = base.raised_capital_range_ids || [];
+  base.raised_capital_range_labels = base.raised_capital_range_labels || [];
+  base.distribution_capability_ids = base.distribution_capability_ids || [];
+  base.distribution_capability_labels = base.distribution_capability_labels || [];
+  base.target_criterion_ids = base.target_criterion_ids || [];
+  base.target_criterion_summaries = base.target_criterion_summaries || [];
+  base.target_industries = base.target_industries || [];
+  base.target_verticals = base.target_verticals || [];
+  base.target_skills = base.target_skills || [];
+  base.target_roles = base.target_roles || [];
+  base.target_product_types = base.target_product_types || [];
+  base.target_raised_capital_range_ids = base.target_raised_capital_range_ids || [];
+  base.target_raised_capital_range_labels = base.target_raised_capital_range_labels || [];
+  base.target_company_headcount_ranges = base.target_company_headcount_ranges || [];
+  base.target_engineering_headcount_ranges = base.target_engineering_headcount_ranges || [];
+  base.target_distribution_capability_ids = base.target_distribution_capability_ids || [];
+  base.target_distribution_capability_labels = base.target_distribution_capability_labels || [];
+  base.target_location_cities = base.target_location_cities || [];
+  base.target_location_countries = base.target_location_countries || [];
+  base.target_foundation_years = base.target_foundation_years || [];
+  base.target_mrr_ranges = base.target_mrr_ranges || [];
+  base.target_company_ids = base.target_company_ids || [];
+  base.experience_company_ids = base.experience_company_ids || [];
+
+  const flattened = flatteningService.flatten({
+    contact: base,
+    experiences: base.experiences,
+    distributionCapabilities: distribution_capabilities,
+    targetCriteria: target_criteria,
+    raisedCapitalRanges: base.raised_capital_range_ids,
+    companies
+  });
+
+  const stageCounts = base.stage_counts;
+  const actionStatus = base.action_status ?? deriveActionStatus(stageCounts);
+
+  const contactData: ContactInput = {
+    ...base,
+    ...flattened.contactUpdates,
+    experiences: base.experiences,
+    experience_company_ids: flattened.experienceCompanyIds,
+    action_status: actionStatus
+  };
+
+  return {
+    contact: contactData,
+    normalizedCompanies: flattened.companies
+  };
+}
+
+function stripContactSystemFields(contact: Contact): ContactInput {
+  const {
+    id: _ignore,
+    created_at: _created,
+    updated_at: _updated,
+    ...rest
+  } = contact;
+  return rest as ContactInput;
 }

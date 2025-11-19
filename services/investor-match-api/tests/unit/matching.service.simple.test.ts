@@ -6,63 +6,71 @@
 import { MatchingService } from '../../src/services/matching.service';
 
 // Simple mock that always works
-jest.mock('../../src/config/firebase', () => ({
-  collections: {
-    contacts: () => ({
-      doc: () => ({
-        get: jest.fn().mockResolvedValue({
-          exists: true,
-          data: () => ({
-            id: 'test123',
-            full_name: 'Test User',
-            contact_type: 'founder',
-            skills: ['javascript'],
-            industries: ['fintech'],
-            job_to_be_done: [],
-            verticals: [],
-            product_types: [],
-            funding_stages: [],
-            company_headcount_ranges: [],
-            engineering_headcount_ranges: [],
-            founder_roles: [],
-            investor_roles: [],
-            target_domains: [],
-            roles: [],
-            seniority_levels: [],
-            past_companies: [],
-            stage_preferences: [],
-            check_size_range: [],
-            team_size_preferences: [],
-            founder_seniority_preferences: [],
-            engineering_headcount_preferences: [],
-            revenue_model_preferences: [],
-            risk_tolerance_preferences: [],
-            experiences: [],
-            current_company: null,
-            current_role: null,
-            location_city: null,
-            location_country: null,
-            linkedin_url: null,
-            email: null,
-            headline: 'Test',
-            created_at: { _seconds: 123 } as any,
-            updated_at: { _seconds: 123 } as any
-          })
+jest.mock('../../src/config/firebase', () => {
+  const mockContact = {
+    id: 'test123',
+    full_name: 'Test User',
+    contact_type: 'founder',
+    skills: ['javascript'],
+    industries: ['fintech'],
+    job_to_be_done: [],
+    verticals: [],
+    product_types: [],
+    funding_stages: [],
+    company_headcount_ranges: [],
+    engineering_headcount_ranges: [],
+    founder_roles: [],
+    investor_roles: [],
+    target_domains: [],
+    roles: [],
+    seniority_levels: [],
+    past_companies: [],
+    stage_preferences: [],
+    check_size_range: [],
+    team_size_preferences: [],
+    founder_seniority_preferences: [],
+    engineering_headcount_preferences: [],
+    revenue_model_preferences: [],
+    risk_tolerance_preferences: [],
+    experiences: [],
+    current_company: null,
+    current_role: null,
+    location_city: null,
+    location_country: null,
+    linkedin_url: null,
+    email: null,
+    headline: 'Test',
+    created_at: { _seconds: 123 } as any,
+    updated_at: { _seconds: 123 } as any
+  };
+
+  return {
+    collections: {
+      contacts: () => ({
+        doc: (id?: string) => ({
+          get: jest.fn().mockResolvedValue(
+            id
+              ? {
+                  exists: true,
+                  data: () => mockContact
+                }
+              : { exists: false }
+          )
         })
-      })
-    }),
-    skills: () => ({ doc: () => ({ get: jest.fn().mockResolvedValue({ exists: false }) }) }),
-    industries: () => ({ doc: () => ({ get: jest.fn().mockResolvedValue({ exists: false }) }) }),
-    verticals: () => ({ doc: () => ({ get: jest.fn().mockResolvedValue({ exists: false }) }) }),
-    productTypes: () => ({ doc: () => ({ get: jest.fn().mockResolvedValue({ exists: false }) }) }),
-    fundingStages: () => ({ doc: () => ({ get: jest.fn().mockResolvedValue({ exists: false }) }) }),
-    companyHeadcountRanges: () => ({ doc: () => ({ get: jest.fn().mockResolvedValue({ exists: false }) }) }),
-    engineeringHeadcountRanges: () => ({ doc: () => ({ get: jest.fn().mockResolvedValue({ exists: false }) }) }),
-    targetDomains: () => ({ doc: () => ({ get: jest.fn().mockResolvedValue({ exists: false }) }) }),
-    roles: () => ({ doc: () => ({ get: jest.fn().mockResolvedValue({ exists: false }) }) }),
-    jobToBeDone: () => ({ doc: () => ({ get: jest.fn().mockResolvedValue({ exists: false }) }) })
-  }
-}));
+      }),
+      skills: () => ({ doc: () => ({ get: jest.fn().mockResolvedValue({ exists: false }) }) }),
+      industries: () => ({ doc: () => ({ get: jest.fn().mockResolvedValue({ exists: false }) }) }),
+      verticals: () => ({ doc: () => ({ get: jest.fn().mockResolvedValue({ exists: false }) }) }),
+      productTypes: () => ({ doc: () => ({ get: jest.fn().mockResolvedValue({ exists: false }) }) }),
+      fundingStages: () => ({ doc: () => ({ get: jest.fn().mockResolvedValue({ exists: false }) }) }),
+      companyHeadcountRanges: () => ({ doc: () => ({ get: jest.fn().mockResolvedValue({ exists: false }) }) }),
+      engineeringHeadcountRanges: () => ({ doc: () => ({ get: jest.fn().mockResolvedValue({ exists: false }) }) }),
+      targetDomains: () => ({ doc: () => ({ get: jest.fn().mockResolvedValue({ exists: false }) }) }),
+      roles: () => ({ doc: () => ({ get: jest.fn().mockResolvedValue({ exists: false }) }) }),
+      jobToBeDone: () => ({ doc: () => ({ get: jest.fn().mockResolvedValue({ exists: false }) }) })
+    }
+  };
+});
 
 describe('MatchingService - Simple Tests', () => {
   let matchingService: MatchingService;
