@@ -601,7 +601,7 @@ export class ContactHandler {
    *                       type: integer
    *                     max:
    *                       type: integer
-   *                 description: Numeric filters for introduction stage counts per contact (keys: prospect, lead, to-meet, met, not-in-campaign, disqualified)
+   *                 description: "Numeric filters for introduction stage counts per contact (keys: prospect, lead, to-meet, met, not-in-campaign, disqualified)"
    *           examples:
    *             fintech_investors:
    *               summary: Find fintech investors in SF

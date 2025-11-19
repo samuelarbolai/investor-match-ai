@@ -4,13 +4,6 @@
  */
 
 import request from 'supertest';
-import express from 'express';
-
-// Import our actual server setup
-import '../../src/server';
-
-// 📚 LESSON: We need to create the Express app for testing
-const app = express();
 
 // Mock the server setup for testing
 jest.mock('../../src/config/firebase', () => {
@@ -25,6 +18,8 @@ jest.mock('../../src/config/firebase', () => {
   
   const db = admin.firestore();
   
+  const getCollection = (collectionName: string) => db.collection(collectionName);
+
   return {
     db,
     admin,
@@ -41,11 +36,15 @@ jest.mock('../../src/config/firebase', () => {
       roles: () => db.collection('roles'),
       jobToBeDone: () => db.collection('jobToBeDone')
     },
-    Timestamp: admin.firestore.Timestamp
+    Timestamp: admin.firestore.Timestamp,
+    getCollection
   };
 });
 
-describe('Contact API Integration Tests', () => {
+const app = require('../../src/server').default;
+const describeIfEmulator = process.env.FIRESTORE_EMULATOR_HOST ? describe : describe.skip;
+
+describeIfEmulator('Contact API Integration Tests', () => {
   let createdContactId: string;
 
   beforeAll(async () => {

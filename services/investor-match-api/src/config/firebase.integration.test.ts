@@ -1,8 +1,17 @@
+import fs from 'fs';
 import { db, collections, Timestamp } from './firebase';
 
 describe('Firebase Integration', () => {
   // Skip if no Firebase credentials
-  const skipIfNoCredentials = process.env.FIREBASE_PROJECT_ID ? test : test.skip;
+  const hasCredentials = () => {
+    if (!process.env.FIREBASE_PROJECT_ID) {
+      return false;
+    }
+    const credsPath = process.env.GOOGLE_APPLICATION_CREDENTIALS;
+    return Boolean(credsPath && fs.existsSync(credsPath));
+  };
+
+  const skipIfNoCredentials = hasCredentials() ? test : test.skip;
 
   skipIfNoCredentials('connects to Firestore', async () => {
     try {

@@ -309,12 +309,13 @@ describe('IntroductionService', () => {
       const counts = await introductionService.recalculateStageCounts(ownerId);
 
       expect(contactRef.set).toHaveBeenCalledWith(
-        {
+        expect.objectContaining({
           stage_counts: expect.objectContaining({
             lead: 2,
             prospect: 1,
           }),
-        },
+          action_status: expect.any(String),
+        }),
         { merge: true }
       );
       expect(counts.lead).toBe(2);

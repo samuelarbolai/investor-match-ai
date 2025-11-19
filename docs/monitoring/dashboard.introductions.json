@@ -1,0 +1,117 @@
+{
+  "displayName": "Introductions Observability",
+  "gridLayout": {
+    "columns": 2,
+    "widgets": [
+      {
+        "title": "Stage Change Throughput",
+        "xyChart": {
+          "dataSets": [
+            {
+              "plotType": "LINE",
+              "legendTemplate": "success",
+              "timeSeriesQuery": {
+                "timeSeriesFilter": {
+                  "filter": "metric.type=\"logging.googleapis.com/user/introductions.stage_change\"",
+                  "aggregation": {
+                    "alignmentPeriod": "60s",
+                    "perSeriesAligner": "ALIGN_RATE"
+                  }
+                }
+              }
+            },
+            {
+              "plotType": "LINE",
+              "legendTemplate": "errors",
+              "timeSeriesQuery": {
+                "timeSeriesFilter": {
+                  "filter": "metric.type=\"logging.googleapis.com/user/introductions.stage_change_error\"",
+                  "aggregation": {
+                    "alignmentPeriod": "60s",
+                    "perSeriesAligner": "ALIGN_RATE"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      },
+      {
+        "title": "Stage Change Latency (ms)",
+        "xyChart": {
+          "dataSets": [
+            {
+              "plotType": "LINE",
+              "legendTemplate": "setStage",
+              "timeSeriesQuery": {
+                "timeSeriesFilter": {
+                  "filter": "metric.type=\"logging.googleapis.com/user/introductions.set_stage.duration\"",
+                  "aggregation": {
+                    "alignmentPeriod": "60s",
+                    "perSeriesAligner": "ALIGN_PERCENTILE_99"
+                  }
+                }
+              }
+            },
+            {
+              "plotType": "LINE",
+              "legendTemplate": "bulkSetStage",
+              "timeSeriesQuery": {
+                "timeSeriesFilter": {
+                  "filter": "metric.type=\"logging.googleapis.com/user/introductions.bulk_set_stage.duration\"",
+                  "aggregation": {
+                    "alignmentPeriod": "60s",
+                    "perSeriesAligner": "ALIGN_PERCENTILE_99"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      },
+      {
+        "title": "Stage Count Cache Updates",
+        "xyChart": {
+          "dataSets": [
+            {
+              "plotType": "STACKED_BAR",
+              "legendTemplate": "updates",
+              "timeSeriesQuery": {
+                "timeSeriesFilter": {
+                  "filter": "metric.type=\"logging.googleapis.com/user/introductions.stage_count.updated\"",
+                  "aggregation": {
+                    "alignmentPeriod": "60s",
+                    "perSeriesAligner": "ALIGN_RATE"
+                  }
+                }
+              }
+            },
+            {
+              "plotType": "LINE",
+              "legendTemplate": "failures",
+              "timeSeriesQuery": {
+                "timeSeriesFilter": {
+                  "filter": "metric.type=\"logging.googleapis.com/user/introductions.stage_count.update_error\"",
+                  "aggregation": {
+                    "alignmentPeriod": "60s",
+                    "perSeriesAligner": "ALIGN_RATE"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      },
+      {
+        "title": "Alert Summary",
+        "scorecard": {
+          "timeSeriesQuery": {
+            "timeSeriesFilter": {
+              "filter": "metric.type=\"monitoring.googleapis.com/condition/true_count\" AND metadata.system_labels.name=starts_with(\"Introductions\")"
+            }
+          }
+        }
+      }
+    ]
+  }
+}

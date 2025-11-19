@@ -1,0 +1,83 @@
+{
+  "displayName": "API Overview",
+  "gridLayout": {
+    "columns": 2,
+    "widgets": [
+      {
+        "title": "Request Throughput",
+        "xyChart": {
+          "dataSets": [
+            {
+              "plotType": "LINE",
+              "legendTemplate": "requests/sec",
+              "timeSeriesQuery": {
+                "timeSeriesFilter": {
+                  "filter": "metric.type=\"logging.googleapis.com/user/api.request.count\"",
+                  "aggregation": {
+                    "alignmentPeriod": "60s",
+                    "perSeriesAligner": "ALIGN_RATE"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      },
+      {
+        "title": "Request Latency (P95)",
+        "xyChart": {
+          "dataSets": [
+            {
+              "plotType": "LINE",
+              "legendTemplate": "P95",
+              "timeSeriesQuery": {
+                "timeSeriesFilter": {
+                  "filter": "metric.type=\"logging.googleapis.com/user/api.request.duration\"",
+                  "aggregation": {
+                    "alignmentPeriod": "60s",
+                    "perSeriesAligner": "ALIGN_PERCENTILE_95"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      },
+      {
+        "title": "Error Rate",
+        "xyChart": {
+          "dataSets": [
+            {
+              "plotType": "LINE",
+              "legendTemplate": "5xx/min",
+              "timeSeriesQuery": {
+                "timeSeriesFilter": {
+                  "filter": "metric.type=\"logging.googleapis.com/user/api.request.errors\"",
+                  "aggregation": {
+                    "alignmentPeriod": "60s",
+                    "perSeriesAligner": "ALIGN_RATE"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      },
+      {
+        "title": "Slow Requests (>1s)",
+        "scorecard": {
+          "blankView": {},
+          "timeSeriesQuery": {
+            "timeSeriesFilter": {
+              "filter": "metric.type=\"logging.googleapis.com/user/api.request.slow\"",
+              "aggregation": {
+                "alignmentPeriod": "60s",
+                "perSeriesAligner": "ALIGN_RATE"
+              }
+            }
+          }
+        }
+      }
+    ]
+  }
+}

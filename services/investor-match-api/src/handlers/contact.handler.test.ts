@@ -59,9 +59,7 @@ describe('prepareContactPayload', () => {
       stage_counts: stageCounts
     };
 
-    const result = prepareContactPayload({
-      contact: payload
-    });
+    const result = prepareContactPayload(payload);
 
     expect(result.contact.action_status).toBe('waiting');
     expect(result.contact.experience_company_ids).toEqual(['acme-inc']);
@@ -87,9 +85,7 @@ describe('prepareContactPayload', () => {
       contact_type: 'investor'
     };
 
-    const result = prepareContactPayload({
-      contact: payload
-    });
+    const result = prepareContactPayload(payload);
 
     expect(result.contact.action_status).toBe('action_required');
     expect(result.contact.target_roles).toEqual([]);

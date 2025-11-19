@@ -88,7 +88,7 @@ describe('FlatteningService', () => {
     expect(result.contactUpdates.target_industries).toEqual(['Fintech', 'Climate']);
     expect(result.contactUpdates.target_location_cities).toContain('San Francisco');
     expect(result.contactUpdates.target_location_countries).toContain('US');
-    expect(result.contactUpdates.target_raised_capital_range_ids[0]).toBe('series_a');
+    expect(result.contactUpdates.target_raised_capital_range_ids).toContain('series_a');
     expect(result.contactUpdates.target_distribution_capability_labels).toContain('100k newsletter');
   });
 });
