@@ -128,6 +128,20 @@ services/investor-match-api/
 - **Recompute Endpoint**: `POST /v1/introductions/stage/recompute` triggers `IntroductionService.recalculateStageCounts` which aggregates Firestore introductions for the given owner and overwrites `stage_counts`. UI “Refresh Counts” button calls this and we also invoke it automatically after every mutation via `synchronizeStageCounts`.
 - **API Exposure**: `/v1/contacts` responses now include `stage_counts`, and `/contacts/filter` accepts `stage_count_filters` (min/max per stage) so clients can render columns or numeric filters.
 
+## Chat Orchestration Middleware (`services/chat-orchestration`)
+- **Purpose**: Bridges Kapso's WhatsApp API with the Botpress Messaging integration so any internal service can send/receive WhatsApp/Botpress messages through one Express + TypeScript service.
+- **Entry points**: `npm run dev` (ts-node-dev) and `npm run build && npm start` for production. Health check at `GET /health`.
+- **Key endpoints**:
+  - `POST /api/messages/send` (`channel`: `kapso` or `botpress`, `to`, `text`, optional `conversationId` + metadata). Returns `{ status: "queued" }`.
+  - `POST /webhooks/kapso` receives Kapso/Meta WhatsApp callbacks and forwards text bodies into Botpress via the Messaging integration webhook. Supports verification challenge when `KAPSO_WEBHOOK_VERIFY_TOKEN` is set.
+  - `POST /webhooks/botpress` receives Botpress outbound events (per Messaging API docs) and relays them to Kapso WhatsApp (`conversationId` == destination phone number).
+- **Integrations**:
+  - Kapso SDK: `@kapso/whatsapp-cloud-api` (requires `KAPSO_API_KEY`, `KAPSO_PHONE_NUMBER_ID`, optional `KAPSO_BASE_URL`, `KAPSO_DEFAULT_SENDER`).
+  - Botpress Messaging API: currently using the integration’s webhook URL (`BOTPRESS_MESSAGING_WEBHOOK_URL`) to relay WhatsApp messages into the bot. No direct Runtime API access is required.
+- **Logging/monitoring**: Pino-based structured logs for HTTP requests + webhook forwarding attempts (`src/logger.ts`). No persistence yet; conversation history endpoint returns 501 until we add storage.
+- **Env example**: `.env.example` documents everything. Update `.env` with Kapso key (`2ce4...e69d`), phone number id `879604755238602`, default sender `+12016458963`, and set `BOTPRESS_MESSAGING_WEBHOOK_URL` to the “Response Endpoint” exposed by your Botpress Messaging integration. The middleware simply posts inbound messages to that URL and listens on `/webhooks/botpress` for outbound replies.
+- **Local E2E testing**: `npm run dev:online` runs the server + a `localtunnel` session simultaneously and prints public URLs for `/webhooks/kapso` + `/webhooks/botpress`. Set `TUNNEL_SUBDOMAIN` (subdomain only, e.g., `investor-chat`) to request a custom hostname before sharing with Kapso/Botpress. Enable `LOG_WEBHOOK_BODIES=true` + optional `WEBHOOK_LOG_LIMIT` to inspect incoming payloads when troubleshooting.
+
 ## Signposts for Upcoming Work
 - **Testing pass**: Run through `docs/testing-plan-v2.md` (seed dev Firestore, execute unit/integration/load tests, follow the manual QA checklist) before merging or promoting to prod.
 - **Monitoring & Observability**: Phase 7 Milestone 7.2 still pending final dashboard/alert validation.
