@@ -43,4 +43,5 @@ async def handle_conversation(payload: ConversationIn):
         raise HTTPException(status_code=500, detail=str(e))
 
     # 3) Return the structured result
-    return result, print("Returning result to client:", result)
+    result = await call_investor_match(decision)
+    return result.model_dump()

@@ -1,0 +1,46 @@
+name: Deploy Conversation Parser to Cloud Run
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - "services/conversation-parser/**"
+      - ".github/workflows/deploy-conversation-parser.yml"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # ----------------------------
+      # AUTHENTICATION
+      # ----------------------------
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      # ----------------------------
+      # INSTALL GCLOUD CLI
+      # ----------------------------
+      - name: Setup Google Cloud CLI
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+
+      # ----------------------------
+      # DEPLOY TO CLOUD RUN
+      # ----------------------------
+      - name: Deploy conversation-parser service
+        working-directory: services/conversation-parser
+        run: |
+          gcloud run deploy conversation-parser \
+            --source . \
+            --platform managed \
+            --region us-east1 \
+            --allow-unauthenticated \
+            --set-env-vars OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} \
+            --set-env-vars INVESTOR_MATCH_API_BASE=${{ secrets.INVESTOR_MATCH_API_BASE }} \
+            --quiet
