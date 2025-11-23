@@ -1,8 +1,8 @@
 # main.py
-from fastapi import FastAPI, HTTPException
+import traceback
+from fastapi import FastAPI, HTTPException, Request
 from app.models import ConversationIn, InvestorMatchResponse
-from app.services import analyze_conversation_llm, call_investor_match, send_to_rest_server
-
+from app.services import analyze_conversation_llm, call_investor_match
 
 app = FastAPI(
     title="Investor Match Conversation Router",
@@ -12,36 +12,72 @@ app = FastAPI(
 
 
 @app.post("/v1/conversations", response_model=InvestorMatchResponse)
-async def handle_conversation(payload: ConversationIn):
+async def handle_conversation(request: Request):
     """
-    Entry point for the conversational workflow.
+    Entry point for the conversational workflow with FULL observability:
+    - Logs raw incoming request body
+    - Logs validation errors
+    - Logs LLM decisions
+    - Logs outbound Investor Match API calls
+    """
 
-    1. Receives the full conversation as text.
-    2. Calls LLM (currently stub) to:
-       - decide whether to POST or PATCH
-       - build the right body
-    3. Calls the Investor Match API.
-    4. Returns status + backend response.
-    """
-    conversation = payload.conversation
+    # ============================================================
+    # 🔥 1. Read & Log RAW incoming body (before validation)
+    # ============================================================
+    raw_body = await request.body()
+    raw_text = raw_body.decode("utf-8")
+    print("\n==============================")
+    print("🔥 RAW REQUEST BODY RECEIVED:")
+    print(raw_text)
+    print("==============================\n")
+
+    # ============================================================
+    # 🧪 2. Try to parse payload into ConversationIn
+    # ============================================================
+    try:
+        payload = ConversationIn.parse_raw(raw_body)
+    except Exception as e:
+        print("❌ VALIDATION ERROR parsing ConversationIn")
+        print(str(e))
+        print(traceback.format_exc())
+        raise HTTPException(
+            status_code=422,
+            detail=f"Invalid request body: {str(e)}"
+        )
+
+    conversation = payload.conversation or ""
 
     if not conversation.strip():
         raise HTTPException(status_code=400, detail="Conversation must not be empty")
 
-    # 1) Use LLM to convert conversation → mode + payload
+    # ============================================================
+    # 🤖 3. LLM: Analyze conversation → get mode + body
+    # ============================================================
     try:
         decision = await analyze_conversation_llm(conversation)
+        print("🤖 LLM DECISION:")
+        print(decision)
     except Exception as e:
+        print("❌ LLM ERROR:")
+        print(str(e))
+        print(traceback.format_exc())
         raise HTTPException(500, f"LLM error: {str(e)}")
 
-    # 2) Call Investor Match API with that decision
+    # ============================================================
+    # 🌐 4. Outbound request to Investor Match API
+    # ============================================================
     try:
+        print("📤 SENDING REQUEST TO INVESTOR MATCH API")
         result = await call_investor_match(decision)
-        print("Investor Match API result:", result)
+        print("📥 RESPONSE FROM INVESTOR MATCH API:")
+        print(result)
     except Exception as e:
-        # In production you'd log this and hide details
+        print("❌ ERROR CALLING INVESTOR MATCH API:")
+        print(str(e))
+        print(traceback.format_exc())
         raise HTTPException(status_code=500, detail=str(e))
 
-    # 3) Return the structured result
-    result = await call_investor_match(decision)
-    return result.model_dump()
+    # ============================================================
+    # 🎉 5. Return structured pydantic response
+    # ============================================================
+    return result
