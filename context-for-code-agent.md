@@ -1,155 +1,69 @@
-# Context For Code Agent
+# Code Agent Context README
 
-- Repository path: `/Users/samuelgiraldoconcha/Documents/30X/investor-match-ai-api`
-- Session start: 2025-11-17T10:42 -05:00
-- GEMINI.md generated: 2025-11-17T10:42 -05:00
-- Tracking files to keep updated: `logs.md`, `current-plan.md`, `context-for-code-agent.md`
-- Standing instructions:
-  - ALWAYS before implementing anything: 1) Layout a plan and show it, 2) Ask for more context that is needed.
-  - Only proceed with implementation after completing both steps above.
-  - **CONFIRMED**: 2025-11-14T11:54 -05:00 - Workflow reconfirmed by user
+This file keeps the canonical context that a future automation/code agent must read before touching the repo.
 
-## Current Status (2025-11-15T13:10)
-- **Phase 1**: COMPLETED ✅ - Project foundation and architecture
-- **Phase 2**: COMPLETED ✅ - Data layer FULLY VALIDATED and production-ready
-- **Phase 3**: COMPLETED ✅ - Core matching algorithm implemented and working
-- **Phase 4**: COMPLETED ✅ - Production-ready API with validation, error handling, logging
-- **Phase 5**: COMPLETED ✅ - Comprehensive testing suite (unit, integration, load testing)
-- **Phase 6**: COMPLETED ✅ - CI/CD Pipeline with GitHub Actions
-- **Architecture Consolidation**: COMPLETED ✅ - Consolidated to monolithic architecture
-- **Phase 7 Milestone 7.1**: COMPLETED ✅ - Documentation & Handoff completed
-- **Current Status**: Phase 7 Milestone 7.2 (Monitoring & Observability) - PENDING
+## Quick Facts
+- Repo path: `/Users/samuelgiraldoconcha/Documents/30X/investor-match-api`
+- Primary service: `investor-match-api` (consolidated monolith)
+- Deployment: Cloud Run (us-east1) via GitHub Actions (`main` → deploy)
+- Live docs: https://investor-match-api-23715448976.us-east1.run.app/api-docs
+- Keep in sync: `logs.md`, `current-plan.md`, `context-for-code-agent.md`
 
-## Final Architecture (Consolidated Monolith)
-- **Service**: `investor-match-api` (single service containing all functionality)
-- **Removed**: 4 stub microservices (matching, flattening, reverse-index, validation)
-- **Deployed**: Cloud Run us-east1 via GitHub Actions CI/CD
-- **Repository**: https://github.com/samuelarbolai/investor-match-ai.git
-- **Version**: 1.0.1 (latest deployment)
+## Standing Instructions
+1. Before making any change, write down your plan and show it to the user.
+2. After sharing the plan, explicitly ask the user if more context is needed and wait for confirmation.
+3. Only implement changes after both steps are completed.
+4. Never revert user changes unless they explicitly ask for it.
+5. Track any session-specific decisions in `logs.md`.
 
-## Production System Status
-- **API Endpoints**: `/v1/contacts` (POST, GET, PATCH, DELETE), `/v1/contacts/:id/matches`
-- **Introduction Endpoints**: `/v1/introductions/stage` (POST/GET), `/v1/introductions/stages/bulk-update` (POST), `/v1/introductions/stage/summary` (GET)
-- **System Endpoints**: `/health`, `/test-firestore`
-- **API Documentation**: https://investor-match-api-23715448976.us-east1.run.app/api-docs (Swagger UI)
-- **Validation**: Joi schemas for all inputs
-- **Error Handling**: Structured error responses
-- **Logging**: Request/response logging with performance monitoring
-- **Matching Algorithm**: Working with real data (tested with 20+ contacts)
-- **Service URL**: `https://investor-match-api-23715448976.us-east1.run.app`
-- **Test Coverage**: 86% on matching service, 100% on utils
+## Project Status (2025-11-15T13:10)
+- Phases 1–6 complete (foundation, data layer, matching, API, tests, CI/CD).
+- Phase 7 Milestone 7.1 complete (documentation & handoff).
+- Active work: Phase 7 Milestone 7.2 (Monitoring & Observability).
+- Architecture consolidations done; repo version deployed: 1.0.1.
 
-## Phase 7 Documentation / Testing Artifacts
-- ✅ **Enhanced README** with setup instructions, schema summary, and seeding workflow.
-- ✅ **Swagger/OpenAPI** at `/api-docs` now reflects the expanded Contact schema (target intent arrays, company/experience nodes, `action_status`).
-- ✅ **Architecture Diagram**: `/docs/architecture-diagram.html`.
-- ✅ **Operations Runbook**: `/docs/RUNBOOK.md`.
-- ✅ **Cost Optimization**: documented in README.
-- ✅ **Testing artifacts**:
-  - `docs/testing-plan-v2.md` – checklist for unit/integration/load/manual validation of the schema overhaul.
-  - Seeding scripts (`npm run clear:firestore`, `seed:vocabs`, `seed:coverage-contacts`, `backfill:nodes`) keep the dev project aligned with DataBaseSchema_v0.2.
-- ✅ **Postman collections** (`postman/`) include examples covering the new fields; set `baseUrl` + IDs before manual tests.
+## Architecture Snapshot
+- Single service Express + TypeScript API (`src/`).
+- Firestore backend; schema described in `data_model_schema_for_firestore.md` and `schema-outline.md`.
+- Matching algorithm tested with 20+ contacts; exposed via `/v1/contacts/:id/matches`.
+- Logging, validation, and error handling implemented; see `README.md` + `TESTING-GUIDE.md`.
 
-## Swagger API Documentation Status
-- **URL**: https://investor-match-api-23715448976.us-east1.run.app/api-docs
-- **Endpoints Documented**: Contacts + System + Introductions (stage CRUD + summary)
-- **Features**: 
-  - Interactive testing interface
-  - Detailed request/response schemas
-  - Parameter examples for easy testing
-  - Multiple example templates (founder/investor)
+## Key Operational Resources
+- `README.md`: setup, seeding, deployment instructions.
+- `docs/RUNBOOK.md`: incident response and operational checklists.
+- `docs/testing-plan-v2.md`: complete verification steps (unit/integration/load/manual).
+- `docs/architecture-diagram.html`: current architecture visualization.
+- Postman collections in `postman/` cover new fields; configure `baseUrl` and IDs before use.
 
-## CI/CD Pipeline Status
-- ✅ GitHub Actions workflows (test.yml, deploy.yml)
-- ✅ Repository connected: https://github.com/samuelarbolai/investor-match-ai.git
-- ✅ Dev and main branches configured
-- ✅ Automated testing on PRs (unit, integration, load tests)
-- ✅ Automated deployment to Cloud Run (us-east1) on main branch
-- ✅ Single service deployment (investor-match-api only)
-- ✅ Status badges in README
+## Testing & Tooling
+- Commands:
+  - `npm test`, `npm run test:coverage`, `npm run test:unit`
+  - Firestore emulator: `npm run emulator:start`, then `npm run test:integration:emulator`
+  - Load tests: `npm run load-test` (k6 scripts)
+- Coverage checkpoints: 86% matching service, 100% utils (some non-blocking failures expected).
+- Seeding scripts (`clear:firestore`, `seed:vocabs`, `seed:coverage-contacts`, `backfill:nodes`) keep dev env in sync with schema v0.2.
 
-## Testing Framework Status
-- **Jest**: Configured with TypeScript support
-- **Coverage**: 86% matching service, 100% utils (some test failures exist but core works)
-- **Test Commands**: 
-  - `npm test` - Run all tests
-  - `npm run test:coverage` - Coverage report
-  - `npm run test:unit` - Unit tests only
-- **Integration**: Firestore emulator setup
-- **Load Testing**: k6 scripts with performance benchmarks
-- **Schema v2 test plan**: see `docs/testing-plan-v2.md` for the full pre-release checklist (dataset seeding, unit/integration/load/manual QA)
-- **Firestore Emulator**: requires Java + `firebase-tools`; start via `npm run emulator:start` (runs on localhost:8080) then export `FIRESTORE_EMULATOR_HOST=localhost:8080` and `FIREBASE_PROJECT_ID=test-project` before running `npm run test:integration:emulator` or `npm run dev`.
-- **Production Seeding**: Prod now mirrors dev coverage—ran `npm run seed:vocabs`, `npm run seed:coverage-contacts`, `npm run backfill:nodes`, and `npm run recompute:stage-counts` with prod creds so every vocab/node has at least one contact. Re-run the same sequence for future refreshes (no `clear:firestore` in prod).
+## API Surface
+- Contacts: `/v1/contacts` CRUD plus `/v1/contacts/:id/matches` and `/v1/contacts/filter`.
+- Introductions workflow: `/v1/introductions/stage`, `/v1/introductions/stages/bulk-update`, `/v1/introductions/stage/summary`.
+- System: `/health`, `/test-firestore`.
+- Responses now include `stage_counts`; filters accept `stage_count_filters`.
 
-## Key Files Structure
-```
-services/investor-match-api/
-├── src/
-│   ├── config/          # Firebase and Swagger configuration
-│   ├── models/          # Type definitions (Contact, Experience, AttributeDocument)
-│   ├── services/        # Business logic (matching, sync, contact CRUD)
-│   ├── handlers/        # Request handlers with Swagger documentation
-│   ├── validators/      # Input validation (Joi schemas)
-│   ├── middleware/      # Express middleware (error, logging, validation)
-│   └── utils/           # Utilities (document ID normalization)
-├── tests/               # Unit, integration, and load tests
-├── docs/                # Documentation files
-│   ├── architecture-diagram.html
-│   └── RUNBOOK.md
-└── Dockerfile           # Container configuration
-```
+## Chat Orchestration Middleware (services/chat-orchestration)
+- Bridges Kapso WhatsApp ↔ Botpress Messaging via Express/TypeScript.
+- Entry points: `npm run dev`, `npm run dev:online`, `npm run build && npm start`.
+- Endpoints: `/api/messages/send`, `/webhooks/kapso`, `/webhooks/botpress`, `/health`.
+- Requires env vars documented in `.env.example` (Kapso credentials, Botpress webhook URL, tunnel config).
+- Logging via Pino (`src/logger.ts`); persistence layer still TODO.
 
-## Recent Schema Enhancements
-- Contacts now include normalized company + experience nodes via `companySyncService`. Each write creates `/companies` and `/experiences` docs (with industries/verticals) while keeping flattened arrays on the contact.
-- Distribution capabilities now persist as normalized nodes (type + label + size/engagement/quality/source) via `distributionCapabilitySyncService`, and each quality score creates a reverse-index bucket (e.g., `socialmedia_quality_8`) so we can filter founders/investors by distribution strength.
-- Investor intent is mirrored into `target_*` arrays (industries, verticals, skills, roles, distribution_capabilities, raised_capital ranges, locations, company IDs, etc.). Reverse-index mapping covers the new fields so we can query “investors targeting Fintech founders.”
-- `flatteningService` denormalizes target criteria into those arrays and still writes `target_criterion_ids` for graph access.
-- Matching logic (`matching.service.ts`) decides whether to compare `current_*` or `target_*` fields based on the seed contact’s type (founders vs investors), so founders’ current attributes match against investors’ target intent.
-- Dev Firestore seeding pipeline (`clear:firestore`, `seed:vocabs`, `seed:coverage-contacts`, `backfill:nodes`) populates every vocab entry plus coverage contacts that reference each node. `/companies` and `/experiences` collections now contain synthetic documents for UI testing.
+## Upcoming Priorities
+1. Finish Monitoring & Observability validation (Phase 7.2).
+2. Execute full testing plan (`docs/testing-plan-v2.md`) before next deployment.
+3. Sync UI repo to consume new schema fields once API verified.
+4. Re-run deployment pipeline (`deploy.yml`) after tests pass.
 
-## Important Notes
-- All core functionality is working and production-ready
-- Some test failures exist but don't affect core operations
-- Firebase authentication issues in tests (not affecting production)
-- System handles 2K+ contacts with <2s response times
-- Monolithic architecture chosen for simplicity and performance
-- Complete API documentation available via Swagger UI
-- All endpoints tested and functional via interactive documentation
-- Contacts now cache introduction stage counts (`stage_counts`) that sync automatically. See “Stage Count Caching” below for implementation details.
-
-- ## Stage Count Caching
-- **Contact Schema**: `services/investor-match-api/src/models/contact.model.ts` adds the optional `stage_counts` map (keys = intro stages).
-- **Mutation Flow** (`services/investor-match-api/src/services/introduction.service.ts`):
-  - `setStage(ownerId, targetId, stage)` and `bulkSetStage(ownerId, updates)` both compute a delta of stage changes (±1 per stage) and call `applyStageCountDelta`.
-  - `applyStageCountDelta(ownerId, delta)` runs a Firestore transaction: loads the owner contact doc, normalizes existing `stage_counts`, applies deltas (clamped ≥0), and updates the doc atomically. After each mutation we also call `synchronizeStageCounts`, which invokes `recalculateStageCounts` to rebuild the cache from scratch (fixes drift after large batches).
-  - `POST /v1/introductions/stage/recompute` (handler + validator + server route) exposes `recalculateStageCounts` so we can force a rebuild for any owner on demand (used by troubleshooting/refresh flows).
-  - `getStageSummary(ownerId)` still returns computed summaries, but the cached counts remove the need for per-contact aggregate queries in the UI.
-- **Bulk Repair Script**: run `npm run recompute:stage-counts` inside `services/investor-match-api` to iterate every contact and call `recalculateStageCounts` (script lives at `scripts/recompute-stage-counts.ts`). Requires valid gcloud auth/creds locally; last executed successfully (Nov 17) to backfill all contacts.
-- **Recompute Endpoint**: `POST /v1/introductions/stage/recompute` triggers `IntroductionService.recalculateStageCounts` which aggregates Firestore introductions for the given owner and overwrites `stage_counts`. UI “Refresh Counts” button calls this and we also invoke it automatically after every mutation via `synchronizeStageCounts`.
-- **API Exposure**: `/v1/contacts` responses now include `stage_counts`, and `/contacts/filter` accepts `stage_count_filters` (min/max per stage) so clients can render columns or numeric filters.
-
-## Chat Orchestration Middleware (`services/chat-orchestration`)
-- **Purpose**: Bridges Kapso's WhatsApp API with the Botpress Messaging integration so any internal service can send/receive WhatsApp/Botpress messages through one Express + TypeScript service.
-- **Entry points**: `npm run dev` (ts-node-dev) and `npm run build && npm start` for production. Health check at `GET /health`.
-- **Key endpoints**:
-  - `POST /api/messages/send` (`channel`: `kapso` or `botpress`, `to`, `text`, optional `conversationId` + metadata). Returns `{ status: "queued" }`.
-  - `POST /webhooks/kapso` receives Kapso/Meta WhatsApp callbacks and forwards text bodies into Botpress via the Messaging integration webhook. Supports verification challenge when `KAPSO_WEBHOOK_VERIFY_TOKEN` is set.
-  - `POST /webhooks/botpress` receives Botpress outbound events (per Messaging API docs) and relays them to Kapso WhatsApp (`conversationId` == destination phone number).
-- **Integrations**:
-  - Kapso SDK: `@kapso/whatsapp-cloud-api` (requires `KAPSO_API_KEY`, `KAPSO_PHONE_NUMBER_ID`, optional `KAPSO_BASE_URL`, `KAPSO_DEFAULT_SENDER`).
-  - Botpress Messaging API: currently using the integration’s webhook URL (`BOTPRESS_MESSAGING_WEBHOOK_URL`) to relay WhatsApp messages into the bot. No direct Runtime API access is required.
-- **Logging/monitoring**: Pino-based structured logs for HTTP requests + webhook forwarding attempts (`src/logger.ts`). No persistence yet; conversation history endpoint returns 501 until we add storage.
-- **Env example**: `.env.example` documents everything. Update `.env` with Kapso key (`2ce4...e69d`), phone number id `879604755238602`, default sender `+12016458963`, and set `BOTPRESS_MESSAGING_WEBHOOK_URL` to the “Response Endpoint” exposed by your Botpress Messaging integration. The middleware simply posts inbound messages to that URL and listens on `/webhooks/botpress` for outbound replies.
-- **Local E2E testing**: `npm run dev:online` runs the server + a `localtunnel` session simultaneously and prints public URLs for `/webhooks/kapso` + `/webhooks/botpress`. Set `TUNNEL_SUBDOMAIN` (subdomain only, e.g., `investor-chat`) to request a custom hostname before sharing with Kapso/Botpress. Enable `LOG_WEBHOOK_BODIES=true` + optional `WEBHOOK_LOG_LIMIT` to inspect incoming payloads when troubleshooting.
-
-## Signposts for Upcoming Work
-- **Testing pass**: Run through `docs/testing-plan-v2.md` (seed dev Firestore, execute unit/integration/load tests, follow the manual QA checklist) before merging or promoting to prod.
-- **Monitoring & Observability**: Phase 7 Milestone 7.2 still pending final dashboard/alert validation.
-- **UI ↔ API Integration**: next UI session should consume the new target arrays, Action Status, and company/experience nodes.
-- **Production Validation**: once tests pass, redeploy main to Cloud Run and verify the new fields via `/api-docs` + Postman.
-
-## Next Steps if Context Lost
-1. **Current Focus**: Complete Phase 7 Milestone 7.2 (Monitoring & Observability)
-2. **Upcoming Session**: Review UI repo and connect the introductions workflow to the API (endpoints listed above)
-3. **Maintenance**: Use RUNBOOK.md for operational procedures
-4. **API Testing**: Use Swagger UI at /api-docs for endpoint testing
+## If Context Gets Lost
+1. Re-read this README plus `README.md` and `docs/RUNBOOK.md`.
+2. Confirm latest status in `current-plan.md`; log actions in `logs.md`.
+3. Follow standing instructions (plan + confirm) before touching code.
+4. Use Swagger UI (`/api-docs`) and Postman collection for manual verification.

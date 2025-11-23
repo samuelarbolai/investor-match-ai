@@ -4,7 +4,7 @@ on:
   push:
     branches: [ main ]
     paths:
-      - "services/conversation-parser/**"
+      - "services/conversation_parser/**"
       - ".github/workflows/deploy-conversation-parser.yml"
 
 jobs:
@@ -34,10 +34,11 @@ jobs:
       # DEPLOY TO CLOUD RUN
       # ----------------------------
       - name: Deploy conversation-parser service
-        working-directory: services/conversation-parser
+        working-directory: services/conversation_parser
         run: |
           gcloud run deploy conversation-parser \
             --source . \
+            --no-cache \
             --platform managed \
             --region us-east1 \
             --allow-unauthenticated \
