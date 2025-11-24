@@ -4,6 +4,7 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 services/conversation_parser/venv/
+services/kapso_middleware/venv/
 
 
 # Environment variables
