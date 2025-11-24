@@ -1,0 +1,38 @@
+name: Deploy Kapso Middleware to Cloud Run
+
+on:
+    push:
+        branches: [ main ]
+        paths:
+        - "services/kapso_middleware/**"
+        - ".github/workflows/deploy-kapso-middleware.yml"
+
+jobs:
+    deploy:
+        runs-on: ubuntu-latest
+
+        steps:
+        - uses: actions/checkout@v4
+
+        - name: Authenticate to Google Cloud
+          uses: google-github-actions/auth@v2
+          with:
+            credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+        - name: Setup Google Cloud CLI
+          uses: google-github-actions/setup-gcloud@v2
+          with:
+            project_id: ${{ secrets.GCP_PROJECT_ID }}
+
+        - name: Deploy kapso-middleware service
+          working-directory: services/kapso_middleware
+          run: |
+            gcloud run deploy kapso-middleware \
+             --source . \
+             --platform managed \
+             --region us-east1 \
+             --allow-unauthenticated \
+             --set-env-vars PARSER_URL=${{ secrets.PARSER_URL }} \
+             --set-env-vars PARSER_API_KEY=${{ secrets.PARSER_API_KEY }} \
+             --set-env-vars LOG_BODIES=false \
+             --quiet
