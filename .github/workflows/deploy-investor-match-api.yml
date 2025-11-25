@@ -21,6 +21,11 @@ jobs:
         cache: 'npm'
         cache-dependency-path: services/${{ matrix.service }}/package-lock.json
 
+    - name: Ensure lockfile is up to date
+      working-directory: services/${{ matrix.service }}
+      run: |
+        npm install --package-lock-only
+
     - name: Install dependencies and build
       working-directory: services/${{ matrix.service }}
       run: |
