@@ -1,3 +1,5 @@
+import admin from 'firebase-admin';
+import { listContactsQuerySchema, mapSortField, ListContactsSortField } from '../validators/contact.validator';
 import { Request, Response } from 'express';
 import { collections, Timestamp } from '../config/firebase';
 import { Contact, ContactInput, ContactType } from '../models/contact.model';
@@ -362,6 +364,18 @@ export class ContactHandler {
    *         schema:
    *           type: string
    *         description: Contact ID to start after (for pagination)
+   *       - in: query
+   *         name: order_by
+   *         schema:
+   *           type: string
+   *           enum: [full_name, contact_type, created_at, updated_at]
+   *         description: Field used to sort results (default created_at)
+   *       - in: query
+   *         name: order_direction
+   *         schema:
+   *           type: string
+   *           enum: [asc, desc]
+   *         description: Sort direction (default asc)
    *     responses:
    *       200:
    *         description: List of contacts with pagination info
@@ -403,46 +417,43 @@ export class ContactHandler {
    *         description: Server error
    */
   async getAllContacts(req: Request, res: Response): Promise<void> {
-  try {
-    const { 
-      limit = '10', 
-      startAfter
-    } = req.query;
-
-    const pageSize = Math.min(parseInt(limit as string), 100);
-    
-    let query = collections.contacts().limit(pageSize);
-
-    // If startAfter is provided, get that document and start after it
-    if (startAfter) {
-      const startDoc = await collections.contacts().doc(startAfter as string).get();
-      if (startDoc.exists) {
-        query = query.startAfter(startDoc);
-      }
-    }
-
-    const snapshot = await query.get();
-    
-    const contacts = snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    })) as Contact[];
-
-    const lastDoc = snapshot.docs[snapshot.docs.length - 1];
-    
-    res.json({
-      data: contacts,
-      pagination: {
-        total: contacts.length,
-        limit: pageSize,
-        nextCursor: lastDoc ? lastDoc.id : null,
-        hasMore: contacts.length === pageSize
-      }
-    });
-  } catch (error) {
-    console.error('Failed to get contacts:', error);
-    res.status(500).json({ error: 'Failed to get contacts' });
+  const { value: query, error } = listContactsQuerySchema.validate(req.query, { convert: true });
+  if (error) {
+    res.status(400).json({ error: error.message });
+    return;
   }
+
+  const { limit, startAfter, order_by, order_direction } = query;
+  const sortField = mapSortField(order_by as ListContactsSortField);
+
+  let firestoreQuery = collections.contacts()
+    .orderBy(sortField, order_direction as FirebaseFirestore.OrderByDirection)
+    .orderBy(admin.firestore.FieldPath.documentId())
+    .limit(limit);
+
+  if (startAfter) {
+    const cursorDoc = await collections.contacts().doc(startAfter).get();
+    if (!cursorDoc.exists) {
+      res.status(400).json({ error: 'Invalid startAfter cursor' });
+      return;
+    }
+    firestoreQuery = firestoreQuery.startAfter(cursorDoc);
+  }
+
+  const snapshot = await firestoreQuery.get();
+  const contacts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Contact[];
+  const lastDoc = snapshot.docs[snapshot.docs.length - 1];
+  const nextCursor = lastDoc ? lastDoc.id : null;
+
+  res.json({
+    data: contacts,
+    pagination: {
+      total: contacts.length,
+      limit,
+      nextCursor,
+      hasMore: Boolean(nextCursor),
+    },
+  });
 }
 
 

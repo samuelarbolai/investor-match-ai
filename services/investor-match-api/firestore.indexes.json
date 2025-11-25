@@ -1,0 +1,9 @@
+{
+  "collectionGroup": "contacts",
+  "queryScope": "COLLECTION",
+  "fields": [
+    { "fieldPath": "contact_type", "order": "ASCENDING" },
+    { "fieldPath": "updated_at", "order": "ASCENDING" },
+    { "fieldPath": "__name__", "order": "ASCENDING" }
+  ]
+}

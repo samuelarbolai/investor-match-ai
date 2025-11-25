@@ -1,5 +1,24 @@
 import Joi from 'joi';
 
+export const LIST_CONTACTS_SORT_FIELDS = ['full_name', 'contact_type', 'created_at', 'updated_at'] as const;
+export type ListContactsSortField = typeof LIST_CONTACTS_SORT_FIELDS[number];
+
+export const listContactsQuerySchema = Joi.object({
+  limit: Joi.number().integer().min(1).max(100).default(10),
+  startAfter: Joi.string().optional(),
+  order_by: Joi.string().valid(...LIST_CONTACTS_SORT_FIELDS).default('created_at'),
+  order_direction: Joi.string().valid('asc', 'desc').default('asc'),
+});
+
+export const SORT_FIELD_MAP: Record<ListContactsSortField, string> = {
+  full_name: 'full_name',
+  contact_type: 'contact_type',
+  created_at: 'created_at',
+  updated_at: 'updated_at',
+};
+
+export const mapSortField = (value: ListContactsSortField): string => SORT_FIELD_MAP[value] ?? 'created_at';
+
 /**
  * Contact creation validation schema
  */
