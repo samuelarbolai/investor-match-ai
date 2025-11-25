@@ -368,13 +368,19 @@ export class ContactHandler {
    *         name: order_by
    *         schema:
    *           type: string
-   *           enum: [full_name, contact_type, created_at, updated_at]
+   *           enum:
+   *             - full_name
+   *             - contact_type
+   *             - created_at
+   *             - updated_at
    *         description: Field used to sort results (default created_at)
    *       - in: query
    *         name: order_direction
    *         schema:
    *           type: string
-   *           enum: [asc, desc]
+   *           enum:
+   *             - asc
+   *             - desc
    *         description: Sort direction (default asc)
    *     responses:
    *       200:
