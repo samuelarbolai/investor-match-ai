@@ -39,6 +39,45 @@
           }
         },
         {
+          "name": "List Contacts",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/contacts?limit=25&order_by=updated_at&order_direction=desc",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "contacts"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "25",
+                  "description": "Number of contacts per page (max 100)"
+                },
+                {
+                  "key": "order_by",
+                  "value": "updated_at",
+                  "description": "Sort field (full_name | contact_type | created_at | updated_at)"
+                },
+                {
+                  "key": "order_direction",
+                  "value": "desc",
+                  "description": "Sort direction (asc | desc)"
+                }
+              ]
+            }
+          }
+        },
+        {
           "name": "Get Contact",
           "request": {
             "method": "GET",

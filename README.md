@@ -92,6 +92,19 @@ POST   /v1/introductions/stage/recompute       # Rebuild a contact's cached stag
 - Documents are stored as `introductions/{ownerId__targetId}` ensuring unique pairs per pipeline owner
 - Stage mutations emit structured logs (`[Introductions] ...`) for monitoring and auditing
 
+### Sorting Contacts
+
+GET /v1/contacts accepts:
+- order_by: full_name | contact_type | created_at | updated_at (default created_at)
+- order_direction: asc | desc (default asc)
+- limit: up to 100
+- startAfter: contact ID for pagination
+
+Example:
+curl "https://<env-url>/v1/contacts?order_by=updated_at&order_direction=desc&limit=25"
+
+Note: ensure Firestore indexes exist for the chosen sort fields (e.g., updated_at desc + __name__ asc).
+
 ### System
 ```http
 GET    /health                # Health check
