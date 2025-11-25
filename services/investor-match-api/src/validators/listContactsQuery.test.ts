@@ -1,4 +1,4 @@
-import { listContactsQuerySchema } from '../../../src/validators/contact.validator';
+import { listContactsQuerySchema } from './contact.validator';
 
 describe('listContactsQuerySchema', () => {
   it('applies defaults', () => {
