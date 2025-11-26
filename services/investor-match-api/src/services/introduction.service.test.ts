@@ -119,10 +119,10 @@ describe('IntroductionService', () => {
     it('should update an existing introduction if one exists', async () => {
       const ownerId = 'owner1';
       const targetId = 'target1';
-      const stage: IntroStage = 'lead';
+      const stage: IntroStage = 'qualified';
       const recalcSpy = jest
         .spyOn(introductionService, 'recalculateStageCounts')
-        .mockResolvedValue(buildStageCounts({ lead: 1 }));
+        .mockResolvedValue(buildStageCounts({ qualified: 1 }));
       const existingDoc = {
         id: `${ownerId}__${targetId}`,
         get: jest.fn().mockResolvedValue({ exists: true, data: () => ({ ownerId, targetId, stage: 'prospect' }) }),
@@ -182,7 +182,7 @@ describe('IntroductionService', () => {
       const ownerId = 'owner1';
       const mockDocs = [
         { id: '1', data: () => ({ ownerId, targetId: 'target1', stage: 'prospect' }) },
-        { id: '2', data: () => ({ ownerId, targetId: 'target2', stage: 'lead' }) },
+        { id: '2', data: () => ({ ownerId, targetId: 'target2', stage: 'qualified' }) },
       ];
 
       ((collections.introductions) as jest.Mock).mockReturnValue({
@@ -203,12 +203,12 @@ describe('IntroductionService', () => {
     it('should create and update introductions in a batch', async () => {
       const ownerId = 'owner1';
       const updates = [
-        { targetId: 'target1', stage: 'lead' as IntroStage }, // Will be an update
+        { targetId: 'target1', stage: 'qualified' as IntroStage }, // Will be an update
         { targetId: 'target2', stage: 'prospect' as IntroStage }, // Will be a new creation
       ];
       const recalcSpy = jest
         .spyOn(introductionService, 'recalculateStageCounts')
-        .mockResolvedValue(buildStageCounts({ lead: 1, prospect: 1 }));
+        .mockResolvedValue(buildStageCounts({ qualified: 1, prospect: 1 }));
 
       const existingDocRef = {
         id: `${ownerId}__target1`,
@@ -261,8 +261,8 @@ describe('IntroductionService', () => {
     it('should return counts for each stage', async () => {
       const ownerId = 'owner1';
       const mockDocs = [
-        { id: '1', data: () => ({ ownerId, targetId: 'a', stage: 'lead' as IntroStage }) },
-        { id: '2', data: () => ({ ownerId, targetId: 'b', stage: 'lead' as IntroStage }) },
+        { id: '1', data: () => ({ ownerId, targetId: 'a', stage: 'qualified' as IntroStage }) },
+        { id: '2', data: () => ({ ownerId, targetId: 'b', stage: 'qualified' as IntroStage }) },
         { id: '3', data: () => ({ ownerId, targetId: 'c', stage: 'met' as IntroStage }) },
       ];
 
@@ -275,10 +275,10 @@ describe('IntroductionService', () => {
       });
 
       const summary = await introductionService.getStageSummary(ownerId);
-      const lead = summary.find(item => item.stage === 'lead');
+      const qualified = summary.find(item => item.stage === 'qualified');
       const disqualified = summary.find(item => item.stage === 'disqualified');
 
-      expect(lead?.count).toBe(2);
+      expect(qualified?.count).toBe(2);
       expect(disqualified?.count).toBe(0);
     });
   });
@@ -287,8 +287,8 @@ describe('IntroductionService', () => {
     it('should recompute counts and persist them', async () => {
       const ownerId = 'owner-recalc';
       const mockDocs = [
-        { data: () => ({ ownerId, targetId: 'a', stage: 'lead' as IntroStage }) },
-        { data: () => ({ ownerId, targetId: 'b', stage: 'lead' as IntroStage }) },
+        { data: () => ({ ownerId, targetId: 'a', stage: 'qualified' as IntroStage }) },
+        { data: () => ({ ownerId, targetId: 'b', stage: 'qualified' as IntroStage }) },
         { data: () => ({ ownerId, targetId: 'c', stage: 'prospect' as IntroStage }) },
       ];
 
@@ -311,14 +311,14 @@ describe('IntroductionService', () => {
       expect(contactRef.set).toHaveBeenCalledWith(
         expect.objectContaining({
           stage_counts: expect.objectContaining({
-            lead: 2,
+            qualified: 2,
             prospect: 1,
           }),
           action_status: expect.any(String),
         }),
         { merge: true }
       );
-      expect(counts.lead).toBe(2);
+      expect(counts.qualified).toBe(2);
       expect(counts.prospect).toBe(1);
     });
 
