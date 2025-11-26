@@ -65,8 +65,8 @@ export class IntroductionService {
         entries.forEach(([stage, change]) => {
           updatedCounts[stage] = Math.max(0, (updatedCounts[stage] ?? 0) + change);
         });
-        tx.update(contactRef, { 
-          stage_counts: updatedCounts, 
+        tx.update(contactRef, {
+          stage_counts: updatedCounts,
           action_status: deriveActionStatus(updatedCounts as StageCounts)
         });
       });
