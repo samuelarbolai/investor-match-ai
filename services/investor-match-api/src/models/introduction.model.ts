@@ -2,11 +2,13 @@ import { Timestamp } from 'firebase-admin/firestore';
 
 export const INTRO_STAGES = [
   'prospect',
-  'lead',
+  'qualified',
+  'outreached',
+  'interested',
   'to-meet',
   'met',
-  'not-in-campaign',
   'disqualified',
+  'not-in-campaign',
 ] as const;
 
 export type IntroStage = typeof INTRO_STAGES[number];

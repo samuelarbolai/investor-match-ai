@@ -243,7 +243,7 @@ const options = {
             stage: {
               type: 'string',
               description: 'Pipeline stage for the target contact',
-              enum: ['prospect', 'lead', 'to-meet', 'met', 'not-in-campaign', 'disqualified']
+              enum: [ 'prospect', 'qualified', 'outreached', 'interested', 'to-meet', 'met', 'disqualified', 'not-in-campaign']
             },
             createdAt: { type: 'string', format: 'date-time' },
             updatedAt: { type: 'string', format: 'date-time' }
@@ -257,7 +257,7 @@ const options = {
             targetId: { type: 'string' },
             stage: {
               type: 'string',
-              enum: ['prospect', 'lead', 'to-meet', 'met', 'not-in-campaign', 'disqualified']
+              enum: ['prospect', 'qualified', 'outreached', 'interested', 'to-meet', 'met', 'disqualified', 'not-in-campaign']
             }
           }
         },
@@ -276,7 +276,7 @@ const options = {
                   targetId: { type: 'string' },
                   stage: {
                     type: 'string',
-                    enum: ['prospect', 'lead', 'to-meet', 'met', 'not-in-campaign', 'disqualified']
+                    enum: ['prospect', 'qualified', 'outreached', 'interested', 'to-meet', 'met', 'disqualified', 'not-in-campaign']
                   }
                 }
               }

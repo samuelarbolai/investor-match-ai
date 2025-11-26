@@ -78,6 +78,16 @@ This canvas contains the full data model, node definitions, edge definitions, an
 - created_at
 - updated_at
 
+### Introduction Stage Counts (New Fields)
+- `prospect`: number
+- `qualified`: number
+- `outreached`: number
+- `interested`: number
+- `to-meet`: number
+- `met`: number
+- `disqualified`: number
+- `not-in-campaign`: number
+
 ## 3. Embedded Experience Type
 - company_name
 - company_id (optional)
