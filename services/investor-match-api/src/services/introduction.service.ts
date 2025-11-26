@@ -1,5 +1,5 @@
 import { collections, db } from '../config/firebase';
-import { Introduction, IntroStage, INTRO_STAGES } from '../models/introduction.model';
+import { Introduction, IntroStage, INTRO_STAGES, STAGE_RANK } from '../models/introduction.model';
 import { Timestamp } from 'firebase-admin/firestore';
 import { metricsService } from '../observability/metrics.service';
 import { StageCounts } from '../models/contact.model';
@@ -20,6 +20,10 @@ type StageCountDelta = Partial<Record<IntroStage, number>>;
 export class IntroductionService {
   private buildDocId(ownerId: string, targetId: string): string {
     return `${ownerId}__${targetId}`;
+  }
+
+  private getStageRank(stage: IntroStage): number {
+    return STAGE_RANK[stage];
   }
 
   private emptyStageCounts(): Record<IntroStage, number> {
@@ -127,7 +131,14 @@ export class IntroductionService {
 
       try {
         if (!snapshot.exists) {
-          const newIntro: Omit<Introduction, 'id'> = { ownerId, targetId, stage, createdAt: now, updatedAt: now };
+          const newIntro: Omit<Introduction, 'id'> = {
+            ownerId,
+            targetId,
+            stage,
+            stage_rank: this.getStageRank(stage),
+            createdAt: now,
+            updatedAt: now
+          };
           await docRef.set(newIntro);
           console.info('[Introductions] created stage', { ownerId, targetId, stage });
           delta[stage] = 1;
@@ -141,7 +152,7 @@ export class IntroductionService {
         }
 
         const previousStage = (snapshot.data() as Introduction).stage;
-        await docRef.update({ stage, updatedAt: now });
+        await docRef.update({ stage, stage_rank: this.getStageRank(stage), updatedAt: now });
         console.info('[Introductions] updated stage', { ownerId, targetId, stage });
         if (previousStage !== stage) {
           delta[previousStage] = -1;
@@ -227,7 +238,7 @@ export class IntroductionService {
 
       if (existingDoc?.exists) {
         const previousStage = (existingDoc.data() as Introduction).stage;
-        batch.update(docRef, { stage: update.stage, updatedAt: now });
+        batch.update(docRef, { stage: update.stage, stage_rank: this.getStageRank(update.stage), updatedAt: now });
         if (previousStage !== update.stage) {
           stageDelta[previousStage] = (stageDelta[previousStage] ?? 0) - 1;
           stageDelta[update.stage] = (stageDelta[update.stage] ?? 0) + 1;
@@ -240,6 +251,7 @@ export class IntroductionService {
         ownerId,
         targetId: update.targetId,
         stage: update.stage,
+        stage_rank: this.getStageRank(update.stage),
         createdAt: now,
         updatedAt: now,
       };

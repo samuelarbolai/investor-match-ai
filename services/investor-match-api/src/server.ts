@@ -13,6 +13,7 @@ import {
   contactIdSchema 
 } from './validators/contact.validator';
 import { IntroductionHandler } from './handlers/introduction.handler';
+import { CampaignHandler } from './handlers/campaign.handler';
 import { 
   setStageSchema, 
   getContactsInStageSchema,
@@ -21,10 +22,12 @@ import {
   recomputeStageCountsSchema,
 } from './validators/introduction.validator';
 import { specs, swaggerUi } from './config/swagger';
+import { campaignContactsQuerySchema } from './validators/campaign.validator';
 
 const app = express();
 const contactHandler = new ContactHandler();
 const introductionHandler = new IntroductionHandler();
+const campaignHandler = new CampaignHandler();
 
 // Security and parsing middleware
 app.use(helmet());
@@ -179,6 +182,12 @@ v1Router.post('/contacts/:id/campaign-matches',
 v1Router.get('/contacts/:id/campaign-analysis',
   validate(contactIdSchema, 'params'),
   contactHandler.analyzeCampaign.bind(contactHandler)
+);
+
+v1Router.get('/owners/:id/campaign-contacts',
+  validate(contactIdSchema, 'params'),
+  validate(campaignContactsQuerySchema, 'query'),
+  campaignHandler.listCampaignContacts.bind(campaignHandler)
 );
 
 v1Router.get('/contacts/:id', 

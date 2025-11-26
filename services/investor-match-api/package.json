@@ -13,6 +13,7 @@
     "seed:sample-contacts": "ts-node-dev --transpile-only scripts/seed-sample-contacts.ts",
     "seed:coverage-contacts": "ts-node-dev --transpile-only scripts/seed-schema-coverage-contacts.ts",
     "backfill:nodes": "ts-node-dev --transpile-only scripts/backfill-normalized-nodes.ts",
+    "backfill:stage-rank": "ts-node-dev --transpile-only scripts/backfill-stage-rank.ts",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
