@@ -9,6 +9,8 @@ from app.routers import webhooks, internal
 logger = logging.getLogger("kapso-middleware")
 logging.basicConfig(level=logging.INFO)
 
+print("Kapso Middleware service has started...")
+
 def create_app() -> FastAPI:
     application = FastAPI()
     application.include_router(webhooks.router)
@@ -27,4 +29,4 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     logger.error("Validation error at %s: %s", request.url.path, exc.errors())
     return JSONResponse(status_code=422, content={"detail": exc.errors()})
 
-print("Kapso Middleware service is starting...")
+print("Kapso Middleware service has started...")
