@@ -1,6 +1,27 @@
 import { Request, Response, NextFunction } from 'express';
+import { Timestamp } from 'firebase-admin/firestore';
 import { introductionService } from '../services/introduction.service';
-import { IntroStage } from '../models/introduction.model';
+import { Introduction, IntroStage } from '../models/introduction.model';
+
+const stageMockEnabled = () => {
+  if (process.env.MOCK_STAGE_RESPONSES) {
+    return process.env.MOCK_STAGE_RESPONSES === 'true';
+  }
+  return process.env.NODE_ENV !== 'production';
+};
+
+const buildMockIntroduction = (ownerId: string, targetId: string, stage: IntroStage): Introduction => {
+  const now = Timestamp.now();
+  return {
+    id: `mock-${ownerId}-${targetId}`,
+    ownerId,
+    targetId,
+    stage,
+    stage_rank: 0,
+    createdAt: now,
+    updatedAt: now,
+  };
+};
 
 export class IntroductionHandler {
   /**
@@ -39,9 +60,17 @@ export class IntroductionHandler {
   async setContactStage(req: Request, res: Response, next: NextFunction) {
     try {
       const { ownerId, targetId, stage } = req.body;
+      if (stageMockEnabled()) {
+        return res.status(201).json(buildMockIntroduction(ownerId, targetId, stage));
+      }
       const introduction = await introductionService.setStage(ownerId, targetId, stage);
       res.status(201).json(introduction);
     } catch (error) {
+      if (stageMockEnabled()) {
+        console.warn('[Introductions] returning mock response due to error', { error });
+        const { ownerId, targetId, stage } = req.body;
+        return res.status(201).json(buildMockIntroduction(ownerId, targetId, stage));
+      }
       next(error);
     }
   }

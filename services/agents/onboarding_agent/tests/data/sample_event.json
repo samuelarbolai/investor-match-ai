@@ -1,0 +1,19 @@
+{
+  "event_type": "whatsapp.message.received",
+  "conversation_id": "conv_sample",
+  "owner_id": "owner_sample",
+  "contact_id": "contact_sample",
+  "phone_number": "+15555550123",
+  "messages": [
+    {
+      "id": "msg_sample",
+      "body": "Hi team, thanks for reaching out!",
+      "type": "text",
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  ],
+  "metadata": {
+    "phone_number_id": "pn_sample",
+    "prospects": []
+  }
+}

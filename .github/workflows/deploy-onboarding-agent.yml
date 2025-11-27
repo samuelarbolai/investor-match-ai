@@ -1,0 +1,41 @@
+name: Deploy Onboarding Agent to Cloud Run
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - "services/agents/onboarding_agent/**"
+      - ".github/workflows/deploy-onboarding-agent.yml"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+      GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Setup Google Cloud CLI
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+
+      - name: Deploy onboarding-agent service
+        working-directory: services/agents/onboarding_agent
+        run: |
+          gcloud run deploy onboarding-agent \
+            --source . \
+            --platform managed \
+            --region us-east1 \
+            --allow-unauthenticated \
+            --quiet \
+            --set-build-env-vars=GOOGLE_BUILD_NO_CACHE=true \
+            --set-env-vars OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} \
+            --set-env-vars FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID}

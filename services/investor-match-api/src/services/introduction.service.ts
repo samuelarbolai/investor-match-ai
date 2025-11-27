@@ -4,6 +4,7 @@ import { Timestamp } from 'firebase-admin/firestore';
 import { metricsService } from '../observability/metrics.service';
 import { StageCounts } from '../models/contact.model';
 import { deriveActionStatus } from '../utils/action-status';
+import { stageEventsService } from './stage-event.service';
 
 interface StageUpdate {
   targetId: string;
@@ -140,6 +141,13 @@ export class IntroductionService {
             updatedAt: now
           };
           await docRef.set(newIntro);
+          await stageEventsService.publish({
+            event: 'stage.changed',
+            owner_id: ownerId,
+            target_ids: [targetId],
+            new_stage: stage,
+            changed_at: now.toDate().toISOString(),
+          });
           console.info('[Introductions] created stage', { ownerId, targetId, stage });
           delta[stage] = 1;
           await this.applyStageCountDelta(ownerId, delta);
@@ -158,6 +166,14 @@ export class IntroductionService {
           delta[previousStage] = -1;
           delta[stage] = (delta[stage] ?? 0) + 1;
           await this.applyStageCountDelta(ownerId, delta);
+          await stageEventsService.publish({
+            event: 'stage.changed',
+            owner_id: ownerId,
+            target_ids: [targetId],
+            previous_stage: previousStage,
+            new_stage: stage,
+            changed_at: now.toDate().toISOString(),
+          });
         }
         metricsService.increment('introductions.stage_change', 1, {
           ownerId,
@@ -265,6 +281,13 @@ export class IntroductionService {
       async () => {
         try {
           await batch.commit();
+          await stageEventsService.publish({
+            event: 'stage.bulk_changed',
+            owner_id: ownerId,
+            target_ids: updates.map((update) => update.targetId),
+            new_stage: updates[0]?.stage,
+            changed_at: now.toDate().toISOString(),
+          });
           await this.applyStageCountDelta(ownerId, stageDelta);
           console.info('[Introductions] bulk stage update', {
             ownerId,

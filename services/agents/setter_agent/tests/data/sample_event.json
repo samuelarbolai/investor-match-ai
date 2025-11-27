@@ -1,0 +1,8 @@
+{
+  "event_type": "whatsapp.message.received",
+  "conversation_id": "conv_setter",
+  "owner_id": "owner_setter",
+  "contact_id": "contact_setter",
+  "phone_number": "+15552223333",
+  "messages": []
+}

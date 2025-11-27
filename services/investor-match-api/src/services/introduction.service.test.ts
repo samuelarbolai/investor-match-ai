@@ -351,3 +351,8 @@ describe('IntroductionService', () => {
     });
   });
 });
+jest.mock('./stage-event.service', () => ({
+  stageEventsService: {
+    publish: jest.fn().mockResolvedValue(undefined),
+  },
+}));
