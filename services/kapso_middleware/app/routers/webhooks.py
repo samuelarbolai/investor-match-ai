@@ -12,6 +12,7 @@ from app.parser_client import send_to_parser
 from app.routers.shared import forward_to_agent, pick_agent_url
 from app.transcript import build_transcript
 from app.utils.signature import verify_signature
+from app.kapso_client import send_text as kapso_send_text
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["webhooks"])
@@ -97,6 +98,23 @@ async def kapso_webhook(request: Request):
         idempotency_key=idempotency_key,
     )
 
+    reply = agent_result.get("reply") if isinstance(agent_result, dict) else None
+    send_error = None
+    if reply:
+        phone_number = normalized_event.phone_number
+        phone_number_id = normalized_event.phone_number_id
+        if not phone_number or not phone_number_id:
+            logger.warning(
+                "[KapsoWebhook] reply dropped missing phone metadata conversation=%s",
+                normalized_event.conversation_id,
+            )
+        else:
+            try:
+                await kapso_send_text(phone_number_id, phone_number, reply)
+            except Exception as exc:  # pragma: no cover - network side effect
+                logger.error("Failed to send Kapso reply: %s", exc)
+                send_error = str(exc)
+
     await mark_processed(idempotency_key)
 
     return JSONResponse(
@@ -104,5 +122,6 @@ async def kapso_webhook(request: Request):
             "status": "queued",
             "parser_response": parser_response,
             "agent_response": agent_result,
+            "kapso_reply_error": send_error,
         }
     )
