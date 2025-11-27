@@ -26,13 +26,32 @@ jobs:
 
         - name: Deploy kapso-middleware service
           working-directory: services/kapso_middleware
+          env:
+            PARSER_URL: ${{ secrets.PARSER_URL }}
+            PARSER_API_KEY: ${{ secrets.PARSER_API_KEY }}
+            KAPSO_API_KEY: ${{ secrets.KAPSO_API_KEY }}
+            KAPSO_WEBHOOK_SECRET: ${{ secrets.KAPSO_WEBHOOK_SECRET }}
+            AGENT_ONBOARDING_URL: ${{ secrets.AGENT_ONBOARDING_URL }}
+            AGENT_CAMPAIGN_URL: ${{ secrets.AGENT_CAMPAIGN_URL }}
+            AGENT_FEEDBACK_URL: ${{ secrets.AGENT_FEEDBACK_URL }}
+            AGENT_SETTER_URL: ${{ secrets.AGENT_SETTER_URL }}
           run: |
             gcloud run deploy kapso-middleware \
-             --source . \
-             --platform managed \
-             --region us-east1 \
-             --allow-unauthenticated \
-             --set-env-vars PARSER_URL=${{ secrets.PARSER_URL }} \
-             --set-env-vars PARSER_API_KEY=${{ secrets.PARSER_API_KEY }} \
-             --set-env-vars LOG_BODIES=false \
-             --quiet
+              --source . \
+              --platform managed \
+              --region us-east1 \
+              --allow-unauthenticated \
+              --quiet \
+              --set-build-env-vars=GOOGLE_BUILD_NO_CACHE=true \
+              --set-env-vars="PARSER_URL=${PARSER_URL},\
+PARSER_API_KEY=${PARSER_API_KEY},\
+LOG_BODIES=false,\
+KAPSO_BASE_URL=https://app.kapso.ai/api/meta/,\
+KAPSO_WHATSAPP_BASE_URL=https://api.kapso.ai/meta/whatsapp/,\
+KAPSO_API_KEY=${KAPSO_API_KEY},\
+KAPSO_WEBHOOK_SECRET=${KAPSO_WEBHOOK_SECRET},\
+AGENT_ONBOARDING_URL=${AGENT_ONBOARDING_URL},\
+AGENT_CAMPAIGN_URL=${AGENT_CAMPAIGN_URL},\
+AGENT_FEEDBACK_URL=${AGENT_FEEDBACK_URL},\
+AGENT_SETTER_URL=${AGENT_SETTER_URL},\
+FORWARD_TO_PARSER=false"

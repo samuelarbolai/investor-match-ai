@@ -12,8 +12,8 @@ class KapsoMessage(BaseModel):
 class KapsoEvent(BaseModel):
     event_type: str
     conversation_id: str
-    owner_id: str
-    contact_id: str
-    phone_number: str
+    owner_id: Optional[str] = None
+    contact_id: Optional[str] = None
+    phone_number: Optional[str] = None
     messages: list[KapsoMessage]
     metadata: Optional[Dict[str, Any]] = None

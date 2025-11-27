@@ -9,7 +9,17 @@ from app.clients import supabase
 llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.2)
 
 
+def _resolve_user_id(event: KapsoEvent) -> str:
+    if event.contact_id:
+        return event.contact_id
+    if event.phone_number:
+        return event.phone_number
+    return event.conversation_id
+
+
 async def load_user(event: KapsoEvent) -> Dict[str, Any]:
+    if not event.phone_number:
+        return {"user_record": None}
     query = (
         supabase.SUPABASE.table("whatsapp_users")
         .select("*")
@@ -36,8 +46,9 @@ async def summarize(event: KapsoEvent, state: Dict[str, Any]) -> Dict[str, Any]:
 
 async def generate_reply(event: KapsoEvent, state: Dict[str, Any]) -> Dict[str, Any]:
     latest = event.messages[-1].body if event.messages else ""
+    phone = event.phone_number or "unknown"
     prompt = f"""
-    You are the onboarding assistant. User phone: {event.phone_number}.
+    You are the onboarding assistant. User phone: {phone}.
     Latest message: {latest}
     Conversation summary so far: {state.get('conversation_summary', '')}
     Ask for missing data (company, role) if not captured yet.
@@ -49,8 +60,9 @@ async def generate_reply(event: KapsoEvent, state: Dict[str, Any]) -> Dict[str, 
 
 
 async def persist(event: KapsoEvent, state: Dict[str, Any]) -> Dict[str, Any]:
+    user_id = _resolve_user_id(event)
     payload = {
-        "user_id": event.contact_id,
+        "user_id": user_id,
         "user_phone_number": event.phone_number,
         "last_conversation_id": event.conversation_id,
         "conversation_summary": state["conversation_summary"],

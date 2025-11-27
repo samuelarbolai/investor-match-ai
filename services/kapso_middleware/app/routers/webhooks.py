@@ -58,6 +58,20 @@ async def kapso_webhook(request: Request):
         logger.info("Kapso headers=%s payload=%s", headers, payload.model_dump_json())
 
     normalized_event = payload.to_normalized(headers)
+    preview = (
+        normalized_event.messages[0].body
+        if normalized_event.messages
+        else None
+    )
+    logger.info(
+        "[KapsoWebhook] event=%s conversation=%s phone=%s owner=%s contact=%s preview=%r",
+        normalized_event.event_type,
+        normalized_event.conversation_id,
+        normalized_event.phone_number,
+        normalized_event.owner_id,
+        normalized_event.contact_id,
+        preview,
+    )
     idempotency_key = normalized_event.idempotency_key
 
     if await was_processed(idempotency_key):

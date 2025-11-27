@@ -1,4 +1,5 @@
 import logging
+from urllib.parse import urljoin
 
 import httpx
 
@@ -8,15 +9,17 @@ logger = logging.getLogger(__name__)
 
 
 async def send_text(phone_number_id: str, to: str, body: str) -> dict:
+    base = str(settings.kapso_whatsapp_base_url).rstrip("/")
+    endpoint = f"{base}/v21.0/{phone_number_id}/messages"
     payload = {
-        "phoneNumberId": phone_number_id,
+        "messaging_product": "whatsapp",
         "to": to,
         "type": "text",
         "text": {"body": body},
     }
     async with httpx.AsyncClient(timeout=15.0) as client:
         resp = await client.post(
-            f"{settings.kapso_base_url}messages",
+            endpoint,
             headers={"X-API-Key": settings.kapso_api_key},
             json=payload,
         )

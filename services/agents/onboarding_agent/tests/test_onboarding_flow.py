@@ -52,3 +52,52 @@ async def test_onboarding_flow_persists_summary(monkeypatch):
 
     result = await run_flow(event)
     assert result["reply"]
+
+
+@pytest.mark.asyncio
+async def test_onboarding_flow_uses_fallback_ids(monkeypatch):
+    data = json.loads(FIXTURE.read_text())
+    data.pop("contact_id", None)
+    event = KapsoEvent(**data)
+
+    async def fake_llm(self, messages):
+        class Res:
+            content = "SUMMARY"
+
+        return Res()
+
+    monkeypatch.setattr(type(llm), "apredict_messages", fake_llm)
+
+    captured = {}
+
+    class FakeTable:
+        def select(self, *_args, **_kwargs):
+            return self
+
+        def eq(self, *_args, **_kwargs):
+            return self
+
+        def single(self):
+            return self
+
+        def execute(self):
+            return type("Res", (), {"data": None})()
+
+        def upsert(self, payload, **_kwargs):
+            captured["user_id"] = payload["user_id"]
+
+            class Exec:
+                def execute(self):
+                    return None
+
+            return Exec()
+
+    class FakeSupabase:
+        def table(self, _name):
+            return FakeTable()
+
+    monkeypatch.setattr("app.graph.supabase.SUPABASE", FakeSupabase(), raising=False)
+
+    result = await run_flow(event)
+    assert result["reply"]
+    assert captured["user_id"] == data["phone_number"]

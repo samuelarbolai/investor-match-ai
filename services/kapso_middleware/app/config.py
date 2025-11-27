@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     log_bodies: bool = False
 
     kapso_base_url: HttpUrl = "https://app.kapso.ai/api/meta/"
+    kapso_whatsapp_base_url: HttpUrl = "https://api.kapso.ai/meta/whatsapp/"
     kapso_api_key: str
     kapso_webhook_secret: Optional[str] = None
 
