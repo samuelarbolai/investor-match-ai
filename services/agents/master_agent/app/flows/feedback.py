@@ -8,6 +8,7 @@ from langchain.chat_models import ChatOpenAI
 from langchain.schema import SystemMessage, HumanMessage
 
 from app.clients import kapso, supabase
+from app.models.chat import ConversationContext
 from app.models.payloads import KapsoEvent
 
 llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.2)
@@ -131,7 +132,7 @@ async def _send_ack(event: KapsoEvent, summary: Dict[str, Any]) -> Dict[str, Any
     return {"reply": body}
 
 
-async def run_feedback_flow(event: KapsoEvent) -> Dict[str, Any]:
+async def run_feedback_flow(event: KapsoEvent, context: ConversationContext) -> Dict[str, Any]:
     user_record = await _load_user(event)
     conversation = ""
     if _timestamp_diff_seconds(user_record, event) > 86400:

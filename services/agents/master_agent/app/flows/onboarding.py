@@ -2,9 +2,9 @@ import json
 from typing import Dict, Any
 from langchain.chat_models import ChatOpenAI
 from langchain.schema import SystemMessage, HumanMessage
-from postgrest.exceptions import APIError
 
 from app.clients import supabase
+from app.models.chat import ConversationContext
 from app.llm.prompts import (
     build_intake_context,
     build_completion_context,
@@ -26,38 +26,18 @@ def _resolve_user_id(event: KapsoEvent) -> str:
     return event.conversation_id
 
 
-async def load_stored_summary(event: KapsoEvent) -> str:
-    if not event.phone_number:
-        return ""
-    query = (
-        supabase.SUPABASE.table("whatsapp_users")
-        .select("conversation_summary")
-        .eq("user_phone_number", event.phone_number)
-        .single()
-    )
-    try:
-        result = query.execute()
-        if result.data and result.data.get("conversation_summary"):
-            return result.data["conversation_summary"].strip()
-    except APIError as exc:
-        if getattr(exc, "code", "") != "PGRST116":
-            raise
-    return ""
-
-
-def _build_transcript(event: KapsoEvent) -> str:
-    lines = []
-    metadata = event.metadata or {}
-    transcript = metadata.get("kapso_transcript")
-    if transcript:
-        lines.append("Kapso transcript:\n" + transcript.strip())
-    for message in event.messages:
-        body = message.body or ""
-        if not body:
+def _build_transcript(context: ConversationContext) -> str:
+    lines: list[str] = []
+    for message in context.recent_messages:
+        if not message.content:
             continue
-        direction = (message.direction or "inbound").lower()
-        label = "User" if direction == "inbound" else "Agent"
-        lines.append(f"{label}: {body.strip()}")
+        if message.role == "user":
+            label = "User"
+        elif message.role == "assistant":
+            label = "Agent"
+        else:
+            label = message.role.title()
+        lines.append(f"{label}: {message.content.strip()}")
     return "\n".join(lines).strip()
 
 
@@ -100,9 +80,9 @@ def _persist_metadata(event: KapsoEvent, summary: str) -> None:
     supabase.SUPABASE.table("whatsapp_users").upsert(payload, on_conflict="user_id").execute()
 
 
-async def run_onboarding_flow(event: KapsoEvent) -> Dict[str, Any]:
-    stored_summary = await load_stored_summary(event)
-    transcript = _build_transcript(event)
+async def run_onboarding_flow(event: KapsoEvent, context: ConversationContext) -> Dict[str, Any]:
+    stored_summary = context.summary or ""
+    transcript = _build_transcript(context)
     reply = await generate_reply(stored_summary, transcript)
     conversation_complete = await evaluate_completion(stored_summary, transcript, reply)
     updated_summary = stored_summary
@@ -112,4 +92,5 @@ async def run_onboarding_flow(event: KapsoEvent) -> Dict[str, Any]:
     return {
         "reply": reply,
         "conversation_complete": conversation_complete,
+        "summary": updated_summary,
     }

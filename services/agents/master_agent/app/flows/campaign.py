@@ -3,6 +3,7 @@ from langchain.chat_models import ChatOpenAI
 from langchain.schema import SystemMessage, HumanMessage
 
 from app.clients import kapso, supabase
+from app.models.chat import ConversationContext
 from app.models.payloads import KapsoEvent
 
 llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.1)
@@ -71,7 +72,7 @@ async def _build_proposal_text(event: KapsoEvent) -> str:
     return response.content
 
 
-async def run_campaign_flow(event: KapsoEvent) -> Dict[str, Any]:
+async def run_campaign_flow(event: KapsoEvent, context: ConversationContext) -> Dict[str, Any]:
     _ensure_user(event)
     proposal_text = await _build_proposal_text(event)
     proposal_id = _store_proposal(event, proposal_text)
