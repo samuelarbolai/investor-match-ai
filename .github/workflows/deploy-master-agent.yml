@@ -32,7 +32,7 @@ jobs:
       - name: Deploy onboarding-agent service
         working-directory: services/agents/onboarding_agent
         run: |
-          gcloud run deploy onboarding-agent \
+          gcloud run deploy master-agent \
             --source . \
             --platform managed \
             --region us-east1 \
