@@ -50,5 +50,6 @@ jobs:
           --platform managed \
           --region us-east1 \
           --allow-unauthenticated \
+          --set-build-env-vars=GOOGLE_BUILD_NO_CACHE=true \
           --set-env-vars FIREBASE_PROJECT_ID=${{ secrets.FIREBASE_PROJECT_ID }} \
           --quiet

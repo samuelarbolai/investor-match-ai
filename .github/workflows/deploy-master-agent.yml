@@ -1,0 +1,50 @@
+name: Deploy Master Agent to Cloud Run
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - "services/agents/master_agent/**"
+      - ".github/workflows/deploy-master-agent.yml"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+      GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+
+
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Setup Google Cloud CLI
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+
+      - name: Deploy onboarding-agent service
+        working-directory: services/agents/onboarding_agent
+        run: |
+          gcloud run deploy onboarding-agent \
+            --source . \
+            --platform managed \
+            --region us-east1 \
+            --allow-unauthenticated \
+            --quiet \
+            --set-build-env-vars=GOOGLE_BUILD_NO_CACHE=true \
+            --set-env-vars="OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}, \
+                            FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID}, \
+                            SUPABASE_URL=${{ secrets.SUBABASE_URL }},\
+                            SUPABASE_SERVICE_ROLE_KEY=${{ secrets.SUBABASE_SERVICE_ROLE_KEY }},\
+                            SUPABASE_ALLOW_MOCKS=false,\
+                            KAPSO_MIDDLEWARE_BASE_URL=https://kapso-middleware-23715448976.us-east1.run.app,\
+                            KAPSO_USE_FAKE=false,\
+                            IM_API_BASE_URL=https://investor-match-api-23715448976.us-east1.run.app,\
+                            IM_API_KEY="

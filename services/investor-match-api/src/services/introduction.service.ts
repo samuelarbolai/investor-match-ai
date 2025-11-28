@@ -5,6 +5,7 @@ import { metricsService } from '../observability/metrics.service';
 import { StageCounts } from '../models/contact.model';
 import { deriveActionStatus } from '../utils/action-status';
 import { stageEventsService } from './stage-event.service';
+import { Contact } from '../models/contact.model';
 
 interface StageUpdate {
   targetId: string;
@@ -32,6 +33,34 @@ export class IntroductionService {
       acc[stage] = 0;
       return acc;
     }, {} as Record<IntroStage, number>);
+  }
+
+  private async buildStageEventMetadata(ownerId: string, targetIds: string[]) {
+    const ownerSnapshot = await collections.contacts().doc(ownerId).get();
+    let phoneNumber = '';
+    let phoneNumberId = '';
+    if (ownerSnapshot.exists) {
+      const ownerData = ownerSnapshot.data() as Partial<Contact> & { kapso?: Record<string, any> };
+      const ownerRecord = ownerData as Record<string, any>;
+      phoneNumber = ownerRecord?.phone ?? ownerRecord?.phone_number ?? '';
+      const kapsoInfo = ownerData?.kapso || {};
+      phoneNumber = kapsoInfo.phone_number || kapsoInfo.phoneNumber || phoneNumber;
+      phoneNumberId = kapsoInfo.phone_number_id || kapsoInfo.phoneNumberId || '';
+    }
+
+    const prospects: Array<{ full_name: string; headline?: string }> = [];
+    await Promise.all(targetIds.map(async (targetId) => {
+      const targetSnapshot = await collections.contacts().doc(targetId).get();
+      if (targetSnapshot.exists) {
+        const data = targetSnapshot.data() as Partial<Contact>;
+        prospects.push({
+          full_name: data?.full_name ?? '',
+          headline: data?.headline ?? undefined,
+        });
+      }
+    }));
+
+    return { phoneNumber, phoneNumberId, prospects };
   }
 
   private normalizeStageCounts(counts?: Record<IntroStage, number>) {
@@ -141,12 +170,19 @@ export class IntroductionService {
             updatedAt: now
           };
           await docRef.set(newIntro);
+          const metadata = (stage === 'prospect' || stage === 'outreached')
+            ? await this.buildStageEventMetadata(ownerId, [targetId])
+            : null;
           await stageEventsService.publish({
             event: 'stage.changed',
             owner_id: ownerId,
             target_ids: [targetId],
             new_stage: stage,
             changed_at: now.toDate().toISOString(),
+            phone_number: metadata?.phoneNumber,
+            phone_number_id: metadata?.phoneNumberId,
+            prospects: metadata?.prospects,
+            flow: metadata ? 'campaign_proposal' : undefined,
           });
           console.info('[Introductions] created stage', { ownerId, targetId, stage });
           delta[stage] = 1;
@@ -166,6 +202,9 @@ export class IntroductionService {
           delta[previousStage] = -1;
           delta[stage] = (delta[stage] ?? 0) + 1;
           await this.applyStageCountDelta(ownerId, delta);
+          const metadata = (stage === 'prospect' || stage === 'outreached')
+            ? await this.buildStageEventMetadata(ownerId, [targetId])
+            : null;
           await stageEventsService.publish({
             event: 'stage.changed',
             owner_id: ownerId,
@@ -173,6 +212,10 @@ export class IntroductionService {
             previous_stage: previousStage,
             new_stage: stage,
             changed_at: now.toDate().toISOString(),
+            phone_number: metadata?.phoneNumber,
+            phone_number_id: metadata?.phoneNumberId,
+            prospects: metadata?.prospects,
+            flow: metadata ? 'campaign_proposal' : undefined,
           });
         }
         metricsService.increment('introductions.stage_change', 1, {
@@ -281,12 +324,20 @@ export class IntroductionService {
       async () => {
         try {
           await batch.commit();
+          const newStage = updates[0]?.stage;
+          const metadata = (newStage === 'prospect' || newStage === 'outreached')
+            ? await this.buildStageEventMetadata(ownerId, updates.map((update) => update.targetId))
+            : null;
           await stageEventsService.publish({
             event: 'stage.bulk_changed',
             owner_id: ownerId,
             target_ids: updates.map((update) => update.targetId),
-            new_stage: updates[0]?.stage,
+            new_stage: newStage,
             changed_at: now.toDate().toISOString(),
+            phone_number: metadata?.phoneNumber,
+            phone_number_id: metadata?.phoneNumberId,
+            prospects: metadata?.prospects,
+            flow: metadata ? 'campaign_proposal' : undefined,
           });
           await this.applyStageCountDelta(ownerId, stageDelta);
           console.info('[Introductions] bulk stage update', {

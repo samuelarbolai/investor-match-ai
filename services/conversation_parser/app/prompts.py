@@ -1,5 +1,8 @@
-SYSTEM_PROMPT = """
-You are the Investor Match JSON body builder.
+from app.prompt_loader import get_prompt
+
+AGENT_NAME = "conversation_parser"
+
+DEFAULT_SYSTEM_PROMPT = """You are the Investor Match JSON body builder.
 
 Your task:
 - Read the entire conversation transcript.
@@ -126,7 +129,6 @@ Example defaults:
 - current_company: "unknown_company"
 - current_role: "unknown_role"
 
-
 ===============================
 URL / URI RULES
 ===============================
@@ -143,14 +145,22 @@ LOCATION RULES:
   "location_city": "unknown_city"
   "location_country": "unknown_country"
 - Use snake_case for both.
-
-
 """
 
-USER_PROMPT_TEMPLATE = """
-Here is the full conversation:
+DEFAULT_USER_PROMPT_TEMPLATE = """Here is the full conversation:
 
 {conversation}
 
-Please read it carefully and output ONLY the JSON object required by the schema above.
-"""
+Please read it carefully and output ONLY the JSON object required by the schema above."""
+
+
+def get_system_prompt() -> str:
+    return get_prompt(AGENT_NAME, "system", default=DEFAULT_SYSTEM_PROMPT)
+
+
+def get_user_prompt_template() -> str:
+    return get_prompt(AGENT_NAME, "user", default=DEFAULT_USER_PROMPT_TEMPLATE)
+
+
+def build_user_prompt(conversation: str) -> str:
+    return get_user_prompt_template().format(conversation=conversation)

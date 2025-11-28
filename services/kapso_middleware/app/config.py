@@ -27,6 +27,10 @@ class Settings(BaseSettings):
 
     max_signature_skew_seconds: int = 300
 
+    supabase_url: Optional[HttpUrl] = None
+    supabase_service_role_key: Optional[str] = None
+    supabase_schema: str = "public"
+
     class Config:
         env_file = ".env"
 

@@ -10,6 +10,10 @@ export interface StageEventPayload {
   previous_stage?: IntroStage;
   new_stage: IntroStage;
   changed_at: string;
+  phone_number?: string;
+  phone_number_id?: string;
+  prospects?: Array<{ full_name: string; headline?: string }>;
+  flow?: string;
 }
 
 class StageEventsService {

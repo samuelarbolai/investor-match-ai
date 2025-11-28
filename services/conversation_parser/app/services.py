@@ -13,7 +13,7 @@ from app.config import (
     OPENAI_API_KEY
 )
 from app.models import InvestorMatchResponse, LlmDecision
-from app.prompts import SYSTEM_PROMPT, USER_PROMPT_TEMPLATE
+from app.prompts import get_system_prompt, build_user_prompt
 
 
 # ---------------------------------------------------------
@@ -31,7 +31,8 @@ async def _call_llm(conversation: str) -> str:
     Returns raw LLM text output.
     """
 
-    user_prompt = USER_PROMPT_TEMPLATE.format(conversation=conversation)
+    user_prompt = build_user_prompt(conversation)
+    system_prompt = get_system_prompt()
 
     print("\n==============================")
     print("🤖 CALLING LLM WITH PROMPT:")
@@ -42,7 +43,7 @@ async def _call_llm(conversation: str) -> str:
         response = client.chat.completions.create(
             model="gpt-4.1",
             messages=[
-                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt}
             ],
             temperature=0.0

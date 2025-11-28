@@ -7,6 +7,9 @@ services/conversation_parser/venv/
 services/kapso_middleware/venv/
 services/agents/*/venv/
 
+services/agents/*/__pycache__/
+services/agents/*/.pytest_cache
+
 
 # Environment variables
 .env

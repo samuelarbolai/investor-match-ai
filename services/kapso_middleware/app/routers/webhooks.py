@@ -10,6 +10,7 @@ from app.idempotency import mark_processed, was_processed
 from app.models import KapsoWebhook
 from app.parser_client import send_to_parser
 from app.routers.shared import forward_to_agent, pick_agent_url
+from app.utils.flow_router import annotate_flow_from_supabase
 from app.transcript import build_transcript
 from app.utils.signature import verify_signature
 from app.kapso_client import send_text as kapso_send_text
@@ -59,6 +60,9 @@ async def kapso_webhook(request: Request):
         logger.info("Kapso headers=%s payload=%s", headers, payload.model_dump_json())
 
     normalized_event = payload.to_normalized(headers)
+    if normalized_event.metadata is None:
+        normalized_event.metadata = {}
+    await annotate_flow_from_supabase(normalized_event)
     preview = (
         normalized_event.messages[0].body
         if normalized_event.messages
@@ -82,38 +86,54 @@ async def kapso_webhook(request: Request):
     agent_url = pick_agent_url(normalized_event)
 
     parser_response = None
-    if settings.forward_to_parser:
-        transcript = build_transcript(payload)
-        if not transcript:
-            raise HTTPException(status_code=400, detail="Conversation transcript empty")
-        try:
-            parser_response = await send_to_parser(transcript)
-        except Exception as exc:
-            logger.error("Parser call failed: %s\n%s", exc, traceback.format_exc())
-            raise HTTPException(status_code=502, detail=str(exc)) from exc
-
-    agent_result = await forward_to_agent(
-        agent_url,
-        normalized_event.model_dump(mode="json"),
-        idempotency_key=idempotency_key,
-    )
-
-    reply = agent_result.get("reply") if isinstance(agent_result, dict) else None
+    agent_result = None
     send_error = None
-    if reply:
-        phone_number = normalized_event.phone_number
-        phone_number_id = normalized_event.phone_number_id
-        if not phone_number or not phone_number_id:
-            logger.warning(
-                "[KapsoWebhook] reply dropped missing phone metadata conversation=%s",
-                normalized_event.conversation_id,
-            )
-        else:
-            try:
-                await kapso_send_text(phone_number_id, phone_number, reply)
-            except Exception as exc:  # pragma: no cover - network side effect
-                logger.error("Failed to send Kapso reply: %s", exc)
-                send_error = str(exc)
+
+    if normalized_event.event_type == "whatsapp.message.received":
+        transcript = build_transcript(payload)
+        if transcript:
+            normalized_event.metadata.setdefault("kapso_transcript", transcript)
+
+        agent_result = await forward_to_agent(
+            agent_url,
+            normalized_event.model_dump(mode="json"),
+            idempotency_key=idempotency_key,
+        )
+
+        reply = agent_result.get("reply") if isinstance(agent_result, dict) else None
+        if reply:
+            phone_number = normalized_event.phone_number
+            phone_number_id = normalized_event.phone_number_id
+            if not phone_number or not phone_number_id:
+                logger.warning(
+                    "[KapsoWebhook] reply dropped missing phone metadata conversation=%s",
+                    normalized_event.conversation_id,
+                )
+            else:
+                try:
+                    await kapso_send_text(phone_number_id, phone_number, reply)
+                except Exception as exc:  # pragma: no cover - network side effect
+                    logger.error("Failed to send Kapso reply: %s", exc)
+                    send_error = str(exc)
+
+        if (
+            agent_result
+            and isinstance(agent_result, dict)
+            and agent_result.get("conversation_complete")
+            and settings.forward_to_parser
+        ):
+            convo_text = transcript or normalized_event.metadata.get("kapso_transcript")
+            if not convo_text:
+                logger.warning(
+                    "[KapsoWebhook] completion detected but transcript missing conversation=%s",
+                    normalized_event.conversation_id,
+                )
+            else:
+                try:
+                    parser_response = await send_to_parser(convo_text)
+                except Exception as exc:
+                    logger.error("Parser call failed: %s\n%s", exc, traceback.format_exc())
+                    send_error = send_error or str(exc)
 
     await mark_processed(idempotency_key)
 

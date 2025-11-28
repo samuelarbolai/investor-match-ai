@@ -14,6 +14,7 @@ import {
 } from './validators/contact.validator';
 import { IntroductionHandler } from './handlers/introduction.handler';
 import { CampaignHandler } from './handlers/campaign.handler';
+import { promptController } from './handlers/prompt.handler';
 import { 
   setStageSchema, 
   getContactsInStageSchema,
@@ -193,6 +194,14 @@ v1Router.get('/owners/:id/campaign-contacts',
 v1Router.get('/contacts/:id', 
   validate(contactIdSchema, 'params'),
   contactHandler.getContact.bind(contactHandler)
+);
+
+v1Router.get('/prompts',
+  promptController.list.bind(promptController)
+);
+
+v1Router.post('/prompts',
+  promptController.upsert.bind(promptController)
 );
 
 v1Router.patch('/contacts/:id', 
