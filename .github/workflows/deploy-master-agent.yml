@@ -29,8 +29,8 @@ jobs:
         with:
           project_id: ${{ secrets.GCP_PROJECT_ID }}
 
-      - name: Deploy onboarding-agent service
-        working-directory: services/agents/onboarding_agent
+      - name: Deploy master-agent service
+        working-directory: services/agents/master_agent
         run: |
           gcloud run deploy master-agent \
             --source . \
