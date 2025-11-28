@@ -16,6 +16,7 @@ jobs:
 
 
 
+
     steps:
       - uses: actions/checkout@v4
 
@@ -42,8 +43,8 @@ jobs:
             --set-env-vars FIREBASE_PROJECT_ID=${{ secrets.FIREBASE_PROJECT_ID }} \
             --set-env-vars="OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}, \
                             FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID}, \
-                            SUPABASE_URL=${{ secrets.SUBABASE_URL }},\
-                            SUPABASE_SERVICE_ROLE_KEY=${{ secrets.SUBABASE_SERVICE_ROLE_KEY }},\
+                            SUPABASE_URL=${{ secrets.SUPABASE_URL }},\
+                            SUPABASE_SERVICE_ROLE_KEY=${{ secrets.SUPABASE_SERVICE_ROLE_KEY }},\
                             SUPABASE_ALLOW_MOCKS=false,\
                             KAPSO_MIDDLEWARE_BASE_URL=https://kapso-middleware-23715448976.us-east1.run.app,\
                             KAPSO_USE_FAKE=false,\
