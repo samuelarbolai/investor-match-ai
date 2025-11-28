@@ -39,6 +39,7 @@ jobs:
             --allow-unauthenticated \
             --quiet \
             --set-build-env-vars=GOOGLE_BUILD_NO_CACHE=true \
+            --set-env-vars FIREBASE_PROJECT_ID=${{ secrets.FIREBASE_PROJECT_ID }} \
             --set-env-vars="OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}, \
                             FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID}, \
                             SUPABASE_URL=${{ secrets.SUBABASE_URL }},\
