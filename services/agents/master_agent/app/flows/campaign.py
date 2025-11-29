@@ -1,4 +1,5 @@
 from typing import Dict, Any, Optional
+import logging
 from langchain.chat_models import ChatOpenAI
 from langchain.schema import SystemMessage, HumanMessage
 
@@ -6,11 +7,14 @@ from app.clients import kapso, supabase
 from app.models.chat import ConversationContext
 from app.models.payloads import KapsoEvent
 
+logger = logging.getLogger(__name__)
+
 llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.1)
 
 
 def _ensure_user(event: KapsoEvent) -> None:
     if not event.contact_id or not event.phone_number:
+        logger.warning("[CampaignFlow] Skipping whatsapp user upsert (contact_id=%s phone_number=%s)", event.contact_id, event.phone_number)
         return
     payload = {
         "user_id": event.contact_id,
@@ -75,6 +79,13 @@ async def _build_proposal_text(event: KapsoEvent) -> str:
 
 
 async def run_campaign_flow(event: KapsoEvent, context: ConversationContext) -> Dict[str, Any]:
+    if not event.phone_number:
+        logger.error("[CampaignFlow] Missing phone number for owner %s; skipping proposal.", event.owner_id)
+        return {"reply": None, "error": "missing_phone_number"}
+    if not (event.metadata or {}).get("phone_number_id"):
+        logger.error("[CampaignFlow] Missing phone_number_id for owner %s; skipping proposal.", event.owner_id)
+        return {"reply": None, "error": "missing_phone_number_id"}
+
     _ensure_user(event)
     proposal_text = await _build_proposal_text(event)
     proposal_id = _store_proposal(event, proposal_text)
