@@ -10,6 +10,8 @@ llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.1)
 
 
 def _ensure_user(event: KapsoEvent) -> None:
+    if not event.contact_id or not event.phone_number:
+        return
     payload = {
         "user_id": event.contact_id,
         "user_phone_number": event.phone_number,

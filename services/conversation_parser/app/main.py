@@ -1,8 +1,19 @@
 # main.py
+import hashlib
+from pathlib import Path
 import traceback
 from fastapi import FastAPI, HTTPException, Request
 from app.models import ConversationIn, InvestorMatchResponse
 from app.services import analyze_conversation_llm, call_investor_match
+
+
+def _log_build_signature():
+    file_path = Path(__file__).resolve()
+    digest = hashlib.sha256(file_path.read_bytes()).hexdigest()[:12]
+    print(f"[ConversationParser] Booting from {file_path} (sha:{digest})")
+
+
+_log_build_signature()
 
 app = FastAPI(
     title="Investor Match Conversation Router",
