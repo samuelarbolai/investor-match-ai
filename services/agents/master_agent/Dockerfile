@@ -17,5 +17,5 @@ ENV NODE_ENV=production
 
 EXPOSE 8080
 
-CMD ["node", "dist/server.js"]
+CMD ["node", "server.js"]
 
