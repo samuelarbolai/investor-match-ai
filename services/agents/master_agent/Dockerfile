@@ -9,9 +9,6 @@ RUN npm install
 # Copy all source files
 COPY . .
 
-# Build the application
-RUN npm run build
-
 # Prune dev dependencies
 RUN npm prune --omit=dev
 
