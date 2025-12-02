@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Master Agent Chat</title>
+  <style>
+    body { font-family: system-ui, sans-serif; background: #0f172a; color: #e2e8f0; margin: 0; display: flex; flex-direction: column; min-height: 100vh; }
+    header { padding: 12px 16px; background: #1e293b; border-bottom: 1px solid #334155; display: flex; align-items: center; justify-content: space-between; }
+    main { flex: 1; display: grid; grid-template-columns: 1fr; gap: 12px; padding: 16px; }
+    #transcript { background: #111827; border: 1px solid #334155; border-radius: 8px; padding: 12px; min-height: 320px; overflow-y: auto; }
+    .msg { margin-bottom: 10px; padding: 10px; border-radius: 6px; }
+    .user { background: #0b4f6c; }
+    .agent { background: #1f2937; }
+    form { display: flex; gap: 8px; }
+    input[type="text"] { flex: 1; padding: 10px; border-radius: 6px; border: 1px solid #334155; background: #0b1222; color: #e2e8f0; }
+    button { padding: 10px 14px; border: none; border-radius: 6px; background: #22d3ee; color: #0f172a; font-weight: 700; cursor: pointer; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .meta { font-size: 12px; color: #94a3b8; margin-top: 4px; }
+    footer { padding: 12px 16px; background: #0f172a; border-top: 1px solid #334155; }
+    @media (min-width: 900px) { main { grid-template-columns: 1fr 320px; } }
+    #panel { background: #111827; border: 1px solid #334155; border-radius: 8px; padding: 12px; }
+    label { display: block; margin-bottom: 6px; font-size: 13px; color: #cbd5e1; }
+  </style>
+</head>
+<body>
+  <header>
+    <div>Master Agent Chat</div>
+    <div id="status">Not connected</div>
+  </header>
+  <main>
+    <section>
+      <div id="transcript"></div>
+    </section>
+    <section id="panel">
+      <form id="chat-form">
+        <input type="text" id="input" placeholder="Type a message" autocomplete="off" />
+        <button type="submit">Send</button>
+      </form>
+      <div class="meta">Conversation ID: <span id="conversation-id">(new)</span></div>
+    </section>
+  </main>
+  <footer>
+    Simple UI reused from chat-agent pattern; posts to /messages.</footer>
+  <script>
+    const transcriptEl = document.getElementById('transcript');
+    const form = document.getElementById('chat-form');
+    const input = document.getElementById('input');
+    const statusEl = document.getElementById('status');
+    const convoEl = document.getElementById('conversation-id');
+    let conversationId = null;
+    let sending = false;
+
+    function addMessage(role, content) {
+      const div = document.createElement('div');
+      div.className = `msg ${role === 'assistant' ? 'agent' : 'user'}`;
+      div.textContent = content;
+      transcriptEl.appendChild(div);
+      transcriptEl.scrollTop = transcriptEl.scrollHeight;
+    }
+
+    async function sendMessage(text) {
+      sending = true;
+      statusEl.textContent = 'Sending...';
+      try {
+        const payload = conversationId ? { conversationId, content: text } : { content: text };
+        const res = await fetch('/messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        if (!res.ok) throw new Error('Request failed');
+        const data = await res.json();
+        conversationId = data.conversationId;
+        convoEl.textContent = conversationId;
+        addMessage('assistant', data.reply || '(no reply)');
+        statusEl.textContent = 'Connected';
+      } catch (err) {
+        statusEl.textContent = 'Error';
+        addMessage('assistant', 'Error: ' + (err.message || err));
+      } finally {
+        sending = false;
+      }
+    }
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      if (sending) return;
+      const text = input.value.trim();
+      if (!text) return;
+      input.value = '';
+      addMessage('user', text);
+      sendMessage(text);
+    });
+
+    statusEl.textContent = 'Ready';
+  </script>
+</body>
+</html>

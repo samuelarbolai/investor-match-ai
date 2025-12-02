@@ -43,6 +43,11 @@ Graph-based founder-investor matching system using Firestore as a cost-optimized
 - **CI/CD:** GitHub Actions
 - **Testing:** Jest with 86% coverage
 
+### Supporting Services (Python)
+- **Kapso middleware (`services/kapso_middleware`)**: FastAPI transport that verifies Kapso webhooks and forwards normalized events to agents.
+- **Master agent (`services/agents/master_agent`)**: LangGraph-based WhatsApp agent handling onboarding, campaign proposals, feedback, and setter scaffolding; ingests Pub/Sub stage events.
+- **Conversation parser (`services/conversation_parser`)**: FastAPI router that classifies conversations and calls this API (POST/PATCH) using OpenAI.
+
 ## ✨ Features
 
 ### 🎯 Intelligent Matching

@@ -6,9 +6,16 @@ yarn-error.log*
 services/conversation_parser/venv/
 services/kapso_middleware/venv/
 services/agents/*/venv/
+services/agents/*/.venv-langgraph/
+
+# Master agent (JS/Node)
+services/agents/master_agent/node_modules/
+services/agents/master_agent/package-lock.json
+services/agents/master_agent/.npm
 
 services/agents/*/__pycache__/
 services/agents/*/.pytest_cache
+services/agents/master_agent/.venv-langgraph/lib/python3.11/site-packages/googleapiclient/discovery_cache/documents/
 
 
 # Environment variables
@@ -43,3 +50,4 @@ firestore-debug.log
 # Logs
 logs/
 *.log
+vibe-coding-sdk/deployment-commands.md

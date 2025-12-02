@@ -35,12 +35,21 @@ def get_prompt(agent_name: str, prompt_type: str, *, language: str = "multi", de
                 _CACHE[key] = (content, now)
                 return content
     except Exception as exc:  # pragma: no cover - logging only
-        logging.warning(
-            "[ParserPromptLoader] falling back to default for %s/%s (%s)",
+        logging.error(
+            "[ParserPromptLoader] prompt fetch failed for %s/%s/%s: %s",
             agent_name,
             prompt_type,
+            language,
             exc,
         )
+        raise
 
-    _CACHE[key] = (default, now)
-    return default
+    logging.error(
+        "[ParserPromptLoader] no prompt found for %s/%s/%s in agent_prompts",
+        agent_name,
+        prompt_type,
+        language,
+    )
+    raise RuntimeError(
+        f"Prompt missing for {agent_name}/{prompt_type}/{language}; add row to agent_prompts"
+    )
