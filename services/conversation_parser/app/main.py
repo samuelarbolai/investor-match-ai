@@ -15,6 +15,8 @@ def _log_build_signature():
 
 _log_build_signature()
 
+print("[ConversationParser] running (print check)")
+
 app = FastAPI(
     title="Investor Match Conversation Router",
     version="0.1.0",
