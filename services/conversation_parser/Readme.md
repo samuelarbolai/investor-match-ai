@@ -59,7 +59,7 @@ curl -X POST http://localhost:8001/v1/conversations \
 - Add pytest coverage when modifying prompts or routing; seed transcripts in `tests/` fixtures for deterministic runs.
 
 ### Logging & Monitoring
-- Logs requests/LLM decisions to stdout; adjust via uvicorn log level.
+- Logs requests/LLM decisions to stdout and prints `[ConversationParser] running (print check)` at startup.
 - Follow repo `docs/monitoring/` guidance if adding health/metrics endpoints.
 
 ### Deployment Notes

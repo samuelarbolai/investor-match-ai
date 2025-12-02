@@ -72,3 +72,4 @@
 
 ## Conversation Parser (prompt loading)
 - `app/prompt_loader.py` fetches prompts from `agent_prompts` (agent_name/prompt_type/language) and now fails hard if missing (no fallback). Requires prompt rows in Supabase (e.g., agent_name `conversation_parser`, prompt_type `system` or `user`).
+- Logs `[ConversationParser] running (print check)` on startup to make the running revision easy to spot in Cloud Run logs.
