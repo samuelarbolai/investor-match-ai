@@ -50,6 +50,11 @@ All services are now live and in sync with the Node-based master-agent + parser 
 - If schema changes, sync `vibe-coding/data_model_schema.md`, `DataBaseSchema/`, and Postman collections.  
 - Log material decisions in `current-plan.md`; follow testing guidance below.
 
+## Interface Notes (tags / exclusion)
+- Contacts carry a single `tag` string (lower-case normalized) used for dataset partitioning (e.g., `coverage`, `test`).  
+- Exclusion contract: optional `exclude_tags` array (query/body). When provided, contacts whose `tag` matches any entry are filtered out; no default exclusion.  
+- Endpoints honoring `exclude_tags`: `GET /v1/contacts`, `POST /v1/contacts/filter`, `GET /v1/contacts/{id}/matches`, `POST /v1/contacts/{id}/campaign-matches`, `GET /v1/owners/{id}/campaign-contacts`.
+
 ## Testing & Verification
 - Investor Match API: `npm test`, `npm run test:unit`, `npm run test:integration`, emulator via `npm run emulator:start` + `npm run test:integration:emulator`, load tests in `tests/load`; use seeding/backfill scripts as needed.  
 - Kapso middleware: run with `uvicorn ... --reload`; add pytest coverage with webhook fixtures.  

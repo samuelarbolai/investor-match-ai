@@ -39,6 +39,16 @@ npm run build && npm start
 - Introductions: `/v1/introductions/stage`, `/v1/introductions/stages/bulk-update`, `/v1/introductions/stage/summary`
 - System: `/health`, `/api-docs`
 
+### Tag exclusion (frontend contract)
+- Contacts carry a single `tag` string (lower-case; e.g., `coverage`, `test`).
+- Exclusion is opt-in via `exclude_tags` array (query/body). When provided, contacts whose `tag` matches any entry are filtered out; no default exclusion.
+- Endpoints honoring `exclude_tags`:
+  - `GET /v1/contacts?exclude_tags=coverage&exclude_tags=test`
+  - `POST /v1/contacts/filter` with `{"exclude_tags":["coverage","test"]}`
+  - `GET /v1/contacts/{id}/matches?exclude_tags=coverage`
+  - `POST /v1/contacts/{id}/campaign-matches` with `{"exclude_tags":["coverage"]}`
+  - `GET /v1/owners/{id}/campaign-contacts?exclude_tags=coverage`
+
 ### Sample Requests
 - Live (prod):  
 ```bash
