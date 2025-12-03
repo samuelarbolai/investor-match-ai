@@ -36,6 +36,7 @@ export interface FilterCriteria {
   stage_count_filters?: StageCountFilters;
   company_names?: string[];
   company_scope?: CompanyScope;
+  exclude_tags?: string[];
 }
 
 export interface FilterResult {
@@ -81,8 +82,11 @@ export class MatchingService {
       limit = 20,
       stage_count_filters,
       company_names,
-      company_scope
+      company_scope,
+      exclude_tags
     } = criteria;
+
+    const excludeSet = new Set((exclude_tags || []).map(tag => this.normalizeTag(tag)).filter(Boolean) as string[]);
 
     const normalizedCompanyNames = this.normalizeCompanyNames(company_names);
     const normalizedCompanySlugs = normalizedCompanyNames.map(name => ensureValidDocumentId(name));
@@ -145,6 +149,13 @@ export class MatchingService {
         const contact = doc.data() as Contact;
         
         // Apply filters
+        if (excludeSet.size > 0) {
+          const tag = this.normalizeTag(contact.tag);
+          if (tag && excludeSet.has(tag)) {
+            continue;
+          }
+        }
+
         if (contact_type && contact.contact_type !== contact_type && contact.contact_type !== 'both') {
           continue;
         }
@@ -203,7 +214,7 @@ export class MatchingService {
     return {
       data: filteredContacts,
       total: filteredContacts.length,
-      filters_applied: criteria
+      filters_applied: { ...criteria, exclude_tags: Array.from(excludeSet) }
     };
   }
 
@@ -335,7 +346,8 @@ export class MatchingService {
     seedId: string,
     attributes: string[],
     targetType: ContactType,
-    limit: number = 20
+    limit: number = 20,
+    excludeTags: string[] = []
   ): Promise<MatchResult> {
     console.log(`Campaign match for ${seedId} using attributes:`, attributes);
     
@@ -345,6 +357,11 @@ export class MatchingService {
       throw new Error(`Contact ${seedId} not found`);
     }
     const seedContact = seedDoc.data() as Contact;
+    const excluded = new Set(
+      (excludeTags || [])
+        .map(tag => this.normalizeTag(tag))
+        .filter((tag): tag is string => Boolean(tag))
+    );
     
     // Map user-friendly attribute names to field names
     const attributeFieldMap: Record<string, { current: string[]; target: string[] }> = {
@@ -457,6 +474,13 @@ export class MatchingService {
         if (!candidateDoc.exists) continue;
         
         const candidateContact = candidateDoc.data() as Contact;
+
+        if (excluded.size > 0) {
+          const tag = this.normalizeTag(candidateContact.tag);
+          if (tag && excluded.has(tag)) {
+            continue;
+          }
+        }
         
         // Filter by contact type
         if (candidateContact.contact_type !== targetType && candidateContact.contact_type !== 'both') {
@@ -571,14 +595,16 @@ export class MatchingService {
   async matchContact(
     seedId: string,
     targetType: ContactType,
-    limit: number = 20
+    limit: number = 20,
+    excludeTags: string[] = []
   ): Promise<MatchResult> {
     // Use all attributes for backward compatibility
     return this.campaignMatch(
       seedId,
       ['skills', 'industries', 'verticals', 'funding_stages', 'location'],
       targetType,
-      limit
+      limit,
+      excludeTags
     );
   }
   
@@ -608,6 +634,14 @@ export class MatchingService {
       return seedContact.contact_type === 'investor' || seedContact.contact_type === 'both';
     }
     return false;
+  }
+
+  private normalizeTag(tag?: string | null): string | null {
+    if (!tag || typeof tag !== 'string') {
+      return null;
+    }
+    const normalized = tag.trim().toLowerCase();
+    return normalized.length ? normalized : null;
   }
 }
 

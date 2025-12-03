@@ -14,6 +14,15 @@ import { companySyncService } from '../services/company-sync.service';
 import { distributionCapabilitySyncService } from '../services/distribution-capability-sync.service';
 import { Company } from '../models/company.model';
 
+const normalizeTags = (input: unknown): string[] => {
+  if (!input) return [];
+  const raw = Array.isArray(input) ? input : [input];
+  return raw
+    .flatMap(value => String(value).split(','))
+    .map(tag => tag.trim().toLowerCase())
+    .filter(tag => Boolean(tag));
+};
+
 export type ContactRequestExtras = {
   distribution_capabilities?: DistributionCapabilityInput[];
   target_criteria?: TargetCriterionInput[];
@@ -375,6 +384,13 @@ export class ContactHandler {
    *             - updated_at
    *         description: Field used to sort results (default created_at)
    *       - in: query
+   *         name: exclude_tags
+   *         schema:
+   *           type: array
+   *           items:
+   *             type: string
+   *         description: Optional tags to exclude (e.g., coverage, test)
+   *       - in: query
    *         name: order_direction
    *         schema:
    *           type: string
@@ -423,44 +439,90 @@ export class ContactHandler {
    *         description: Server error
    */
   async getAllContacts(req: Request, res: Response): Promise<void> {
-  const { value: query, error } = listContactsQuerySchema.validate(req.query, { convert: true });
-  if (error) {
-    res.status(400).json({ error: error.message });
-    return;
-  }
-
-  const { limit, startAfter, order_by, order_direction } = query;
-  const sortField = mapSortField(order_by as ListContactsSortField);
-
-  let firestoreQuery = collections.contacts()
-    .orderBy(sortField, order_direction as FirebaseFirestore.OrderByDirection)
-    .orderBy(admin.firestore.FieldPath.documentId())
-    .limit(limit);
-
-  if (startAfter) {
-    const cursorDoc = await collections.contacts().doc(startAfter).get();
-    if (!cursorDoc.exists) {
-      res.status(400).json({ error: 'Invalid startAfter cursor' });
+    const { value: query, error } = listContactsQuerySchema.validate(req.query, { convert: true });
+    if (error) {
+      res.status(400).json({ error: error.message });
       return;
     }
-    firestoreQuery = firestoreQuery.startAfter(cursorDoc);
+
+    const { limit, startAfter, order_by, order_direction, exclude_tags } = query as {
+      limit: number;
+      startAfter?: string;
+      order_by: ListContactsSortField;
+      order_direction: FirebaseFirestore.OrderByDirection;
+      exclude_tags?: string[] | string;
+    };
+    const sortField = mapSortField(order_by as ListContactsSortField);
+    const excluded = new Set(normalizeTags(exclude_tags));
+
+    let baseQuery = collections.contacts()
+      .orderBy(sortField, order_direction as FirebaseFirestore.OrderByDirection)
+      .orderBy(admin.firestore.FieldPath.documentId());
+
+    if (startAfter) {
+      const cursorDoc = await collections.contacts().doc(startAfter).get();
+      if (!cursorDoc.exists) {
+        res.status(400).json({ error: 'Invalid startAfter cursor' });
+        return;
+      }
+      baseQuery = baseQuery.startAfter(cursorDoc);
+    }
+
+    const filtered: Contact[] = [];
+    let hasMore = false;
+    let nextCursor: string | null = null;
+    let cursorDoc: FirebaseFirestore.DocumentSnapshot | undefined;
+    const fetchLimit = Math.min(Math.max(limit * 2, limit + 10), 300);
+
+    while (filtered.length < limit) {
+      let queryToRun = baseQuery.limit(fetchLimit);
+      if (cursorDoc) {
+        queryToRun = queryToRun.startAfter(cursorDoc);
+      }
+
+      const snapshot = await queryToRun.get();
+      if (snapshot.empty) {
+        hasMore = false;
+        nextCursor = null;
+        break;
+      }
+
+      cursorDoc = snapshot.docs[snapshot.docs.length - 1];
+      const batchContacts = snapshot.docs
+        .map(doc => ({ id: doc.id, ...doc.data() } as Contact))
+        .filter(contact => {
+          if (excluded.size === 0) return true;
+          const tag = typeof contact.tag === 'string' ? contact.tag.trim().toLowerCase() : null;
+          return !tag || !excluded.has(tag);
+        });
+
+      for (const contact of batchContacts) {
+        if (filtered.length >= limit) {
+          break;
+        }
+        filtered.push(contact);
+      }
+
+      if (snapshot.size < fetchLimit) {
+        hasMore = false;
+        nextCursor = cursorDoc ? cursorDoc.id : null;
+        break;
+      }
+
+      hasMore = true;
+      nextCursor = cursorDoc ? cursorDoc.id : null;
+    }
+
+    res.json({
+      data: filtered,
+      pagination: {
+        total: filtered.length,
+        limit,
+        nextCursor,
+        hasMore: hasMore && Boolean(nextCursor),
+      },
+    });
   }
-
-  const snapshot = await firestoreQuery.get();
-  const contacts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Contact[];
-  const lastDoc = snapshot.docs[snapshot.docs.length - 1];
-  const nextCursor = lastDoc ? lastDoc.id : null;
-
-  res.json({
-    data: contacts,
-    pagination: {
-      total: contacts.length,
-      limit,
-      nextCursor,
-      hasMore: Boolean(nextCursor),
-    },
-  });
-}
 
 
   /**
@@ -763,6 +825,11 @@ export class ContactHandler {
    *                     max:
    *                       type: integer
    *                 description: "Numeric filters for introduction stage counts per contact (keys: prospect, lead, to-meet, met, not-in-campaign, disqualified)"
+   *               exclude_tags:
+   *                 type: array
+   *                 items:
+   *                   type: string
+   *                 description: Tags to exclude (e.g., coverage, test)
    *           examples:
    *             fintech_investors:
    *               summary: Find fintech investors in SF
@@ -805,7 +872,8 @@ export class ContactHandler {
         limit = 20,
         stage_count_filters,
         company_names,
-        company_scope
+        company_scope,
+        exclude_tags
       } = req.body;
 
       const result = await matchingService.filterContacts({
@@ -820,7 +888,8 @@ export class ContactHandler {
         limit: Math.min(parseInt(limit as string, 10), 100),
         stage_count_filters,
         company_names,
-        company_scope
+        company_scope,
+        exclude_tags: normalizeTags(exclude_tags)
       });
 
       res.json(result);
@@ -865,6 +934,11 @@ export class ContactHandler {
    *                 type: integer
    *                 default: 20
    *                 maximum: 100
+   *               exclude_tags:
+   *                 type: array
+   *                 items:
+   *                   type: string
+   *                 description: Tags to exclude from candidate matches (e.g., coverage, test)
    *           examples:
    *             location_only:
    *               summary: Match by location only
@@ -922,7 +996,8 @@ export class ContactHandler {
       const {
         attributes = [],
         target_type = 'investor',
-        limit = 20
+        limit = 20,
+        exclude_tags
       } = req.body || {};
 
       console.log('Campaign match request body:', req.body);
@@ -964,7 +1039,8 @@ export class ContactHandler {
         id,
         attributes,
         target_type as ContactType,
-        Math.min(parseInt(limit as string), 100)
+        Math.min(parseInt(limit as string), 100),
+        normalizeTags(exclude_tags)
       );
 
       res.json(result);
@@ -1072,6 +1148,13 @@ export class ContactHandler {
    *           default: 20
    *         description: Maximum number of matches to return
    *         example: 10
+   *       - in: query
+   *         name: exclude_tags
+   *         schema:
+   *           type: array
+   *           items:
+   *             type: string
+   *         description: Tags to exclude from candidate matches (e.g., coverage, test)
    *     responses:
    *       200:
    *         description: Matches found successfully
@@ -1090,7 +1173,7 @@ export class ContactHandler {
   async matchContacts(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
-      const { targetType = 'investor', limit = 20 } = req.query;
+      const { targetType = 'investor', limit = 20, exclude_tags } = req.query;
       
       // Validate targetType
       if (!['founder', 'investor', 'both'].includes(targetType as string)) {
@@ -1111,7 +1194,8 @@ export class ContactHandler {
       const matchResult = await matchingService.matchContact(
         id,
         targetType as ContactType,
-        limitNum
+        limitNum,
+        normalizeTags(exclude_tags)
       );
       
       res.json(matchResult);

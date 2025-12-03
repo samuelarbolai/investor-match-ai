@@ -15,6 +15,9 @@ export type ActionStatus = 'action_required' | 'waiting';
 export interface Contact {
   /** Document ID */
   id: string;
+
+  /** Optional tag used for dataset partitioning (e.g., coverage, test) */
+  tag?: string | null;
   
   /** Full name of the contact */
   full_name: string;

@@ -10,6 +10,7 @@ export interface CampaignContactsParams {
   startAfter?: string;
   orderBy: CampaignContactsOrderBy;
   orderDirection: 'asc' | 'desc';
+  excludeTags?: string[];
 }
 
 export interface CampaignContactRecord {
@@ -32,7 +33,13 @@ export interface CampaignContactsResponse {
 
 export class CampaignService {
   async getCampaignContacts(ownerId: string, params: CampaignContactsParams): Promise<CampaignContactsResponse> {
-    const { limit, startAfter, orderBy, orderDirection } = params;
+    const { limit, startAfter, orderBy, orderDirection, excludeTags } = params;
+    const excluded = new Set(
+      (excludeTags || [])
+        .filter(tag => typeof tag === 'string')
+        .map(tag => tag.trim().toLowerCase())
+        .filter(Boolean)
+    );
 
     let query = collections
       .introductions()
@@ -86,6 +93,12 @@ export class CampaignService {
       const contact = contactMap.get(intro.targetId);
       if (!contact) {
         return acc;
+      }
+      if (excluded.size > 0) {
+        const tag = typeof contact.tag === 'string' ? contact.tag.trim().toLowerCase() : null;
+        if (tag && excluded.has(tag)) {
+          return acc;
+        }
       }
       acc.push({
         contact,

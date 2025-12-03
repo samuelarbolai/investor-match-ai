@@ -343,5 +343,34 @@ describe('MatchingService', () => {
       expect(result.data).toHaveLength(1);
       expect(result.data[0].id).toBe(contact.id);
     });
+
+    test('excludes contacts with matching tags when exclude_tags provided', async () => {
+      const tagged = buildContact({
+        id: 'contact-tagged',
+        full_name: 'Tagged Contact',
+        contact_type: 'investor',
+        skills: ['javascript'],
+        tag: 'coverage'
+      });
+
+      const clean = buildContact({
+        id: 'contact-clean',
+        full_name: 'Clean Contact',
+        contact_type: 'investor',
+        skills: ['javascript']
+      });
+
+      __setMockContact(tagged.id, tagged);
+      __setMockContact(clean.id, clean);
+      __setMockAttributeDoc('skills', 'javascript', [tagged.id, clean.id]);
+
+      const result = await matchingService.filterContacts({
+        skills: ['javascript'],
+        exclude_tags: ['coverage']
+      });
+
+      expect(result.data).toHaveLength(1);
+      expect(result.data[0].id).toBe(clean.id);
+    });
   });
 });

@@ -5,4 +5,5 @@ export const campaignContactsQuerySchema = Joi.object({
   startAfter: Joi.string().optional(),
   order_by: Joi.string().valid('stage', 'updated_at').default('stage'),
   order_direction: Joi.string().valid('asc', 'desc').default('asc'),
+  exclude_tags: Joi.array().items(Joi.string().trim()).optional(),
 });

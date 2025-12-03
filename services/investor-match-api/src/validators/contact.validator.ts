@@ -8,6 +8,7 @@ export const listContactsQuerySchema = Joi.object({
   startAfter: Joi.string().optional(),
   order_by: Joi.string().valid(...LIST_CONTACTS_SORT_FIELDS).default('created_at'),
   order_direction: Joi.string().valid('asc', 'desc').default('asc'),
+  exclude_tags: Joi.array().items(Joi.string().trim()).optional()
 });
 
 export const SORT_FIELD_MAP: Record<ListContactsSortField, string> = {
@@ -84,6 +85,7 @@ export const createContactSchema = Joi.object({
   current_role: Joi.string().max(100).allow(null),
   linkedin_url: Joi.string().uri().allow(null),
   email: Joi.string().email().allow(null),
+  tag: Joi.string().trim().max(100).allow(null),
   
   // Experiences array
   experiences: Joi.array().items(
@@ -152,7 +154,8 @@ export const updateContactSchema = createContactSchema.fork(
  */
 export const matchQuerySchema = Joi.object({
   targetType: Joi.string().valid('founder', 'investor', 'both').default('investor'),
-  limit: Joi.number().integer().min(1).max(100).default(20)
+  limit: Joi.number().integer().min(1).max(100).default(20),
+  exclude_tags: Joi.array().items(Joi.string().trim()).optional()
 });
 
 /**
