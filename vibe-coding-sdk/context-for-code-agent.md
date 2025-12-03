@@ -4,6 +4,7 @@
 - Multi-service repository; every deployable service lives under `services/` and ships in its own container. No root monolith.
 - Core API (Express + TypeScript) in `services/investor-match-api/` (rich Jest suites and data scripts).
 - Supporting Python services: Kapso webhook middleware, WhatsApp master agent, and conversation parser.
+All services are now live and in sync with the Node-based master-agent + parser deployment described below.
 
 ## Project Modules
 - Investor Match API: `services/investor-match-api/` (primary API with tests and seeding/backfill scripts).

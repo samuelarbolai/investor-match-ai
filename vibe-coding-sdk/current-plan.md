@@ -1,230 +1,78 @@
 # Investor Match Backend — Current Plan (Template-Aligned)
 
 ## Plan Summary
-Rebuild `services/agents/master_agent` in JavaScript (Node/Express-style) using the chat-agent-api pattern from `Documents/30X/chat-agent-api`, removing langgraph and old Python flow code but preserving Supabase client/schema, `.env`, and LLM-as-judge (to rewire later). Deliver a bootcamp-style, copy/paste-ready guide.
+Clean Firestore contacts DB for E2E prompt-engineering and production launch: back up current data, delete all non-coverage documents, retain/seed tagged coverage docs so every collection remains visible in Firestore and filterable in prod UI.
 
 ## Plan Architecture (Flow)
-1) State: Supabase holds conversations/messages; service loads prior messages + system prompt and streams LLM reply; writes user/assistant messages back; updates conversation meta.  
-2) API: Node/Express (or minimal server) with routes: `POST /messages` (send message, auto-create conversation), `GET /conversations/:id/messages`, optional `GET /conversations`.  
-3) LLM: OpenAI (env-driven model); assemble `[system, history..., user]`; stream response; log AI events to Supabase.  
-4) Judge: keep existing LLM-as-judge module; rewire later to new message store.
+1) Inventory Firestore collections and counts (coverage vs non-coverage, where coverage is in the doc ID/name).  
+2) Backup: `gcloud auth application-default login` → `gcloud firestore export` to a new GCS prefix in the same project.  
+3) Cleanup scripts (Node under `services/investor-match-api`): delete non-coverage docs; ensure/create at least one coverage doc per collection; tag coverage docs with `tag: "coverage"` and allow tagging “test” docs with `tag: "test"` for future UI filtering.  
+4) Verification: recount per collection and spot-check console/UI to confirm only coverage-tagged data remains and schema stays visible.
 
 ## Plan Structure (Directories & Files)
-- New service skeleton in `services/agents/master_agent` (JS):  
-  - `server.js` (Express app)  
-  - `routes/messages.js`, `routes/conversations.js`  
-  - `lib/supabase.js` (reuse env + client)  
-  - `lib/prompt.js` (onboarding system prompt)  
-  - `lib/llm.js` (OpenAI client + stream helper)  
-  - `lib/state.js` (conversation/message CRUD, sequence, meta)  
-- Preserve: `.env` files, `app/clients/supabase.py` (for reference), Supabase schema.  
-- Remove/ignore: langgraph-specific files (`app/graph*.py`, `app/flows/*`, `app/evals/run_onboarding_judge.py` wiring will be adapted later), dev configs for langgraph.
+- Scripts under `services/investor-match-api/scripts/`:
+  - `firestore-inventory-coverage.ts` (list counts of coverage vs non-coverage per collection).  
+  - `firestore-backup.ts` (wrapper to invoke/export via `gcloud firestore export`).  
+  - `firestore-clean-non-coverage.ts` (delete non-coverage docs across target collections).  
+  - `firestore-ensure-coverage.ts` (ensure at least one coverage doc per collection, set `tag: "coverage"`, reuse/extend coverage seeds).  
+- Uses existing `.env` for Firestore creds/project; runs locally after `gcloud auth application-default login`.
 
 ## Modifications (phased, with file targets)
-### Phase 1 – Scaffold JS service (replace Python/langgraph)
-- Add `server.js`:
-```js
-import express from 'express';
-import messagesRouter from './routes/messages.js';
-import conversationsRouter from './routes/conversations.js';
-const app = express();
-app.use(express.json());
-app.use('/messages', messagesRouter);
-app.use('/conversations', conversationsRouter);
-app.get('/health', (_req, res) => res.json({ ok: true }));
-app.listen(process.env.PORT || 8080, () => console.log('master-agent listening'));
-export default app;
-```
-- Add `lib/supabase.js` (reuse env):
-```js
-import 'dotenv/config';
-import { createClient } from '@supabase/supabase-js';
-const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-if (!SUPABASE_URL || !SUPABASE_KEY) throw new Error('Supabase creds missing');
-export const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
-```
-- Add `lib/prompt.js` with onboarding system prompt (ported from chat-agent-api style, but tailored to onboarding fields).
-- Add `lib/llm.js`:
-```js
-import OpenAI from 'openai';
-const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-export async function streamChat(messages, model = process.env.OPENAI_MODEL || 'gpt-4o-mini') {
-  return client.chat.completions.create({ model, messages, stream: true });
-}
-```
-- Add `lib/state.js`:
-```js
-import { supabase } from './supabase.js';
+### Phase 1 – Inventory
+- Implement `firestore-inventory-coverage.ts` to log per-collection totals and highlight collections missing coverage docs.
 
-export async function getConversationById(id) {
-  const { data, error } = await supabase.from('conversations').select('*').eq('id', id).single();
-  if (error) throw error;
-  return data;
-}
-export async function createConversation({ agentSlug, title, promptVersion }) {
-  const { data, error } = await supabase.from('conversations').insert({
-    agent_id: null, external_conversation_id: null, phone_number: null,
-    title, prompt_version: promptVersion, created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-    agent_slug: agentSlug,
-  }).select('*').single();
-  if (error) throw error;
-  return data;
-}
-export async function listMessages(conversationId) {
-  const { data, error } = await supabase.from('messages')
-    .select('role,content,sequence,metadata')
-    .eq('conversation_id', conversationId)
-    .order('sequence', { ascending: true });
-  if (error) throw error;
-  return data || [];
-}
-export async function insertMessage({ conversationId, role, content, sequence, metadata }) {
-  const { error } = await supabase.from('messages').insert({
-    conversation_id: conversationId,
-    role, content, sequence,
-    metadata: metadata || null,
-    created_at: new Date().toISOString(),
-  });
-  if (error) throw error;
-}
-export async function nextSequence(conversationId) {
-  const { data, error } = await supabase.from('messages')
-    .select('sequence').eq('conversation_id', conversationId)
-    .order('sequence', { ascending: false }).limit(1);
-  if (error) throw error;
-  const current = data && data[0] ? data[0].sequence : 0;
-  return (current || 0) + 1;
-}
-```
-- Add `routes/messages.js` (core flow):
-```js
-import express from 'express';
-import { supabase } from '../lib/supabase.js';
-import { getConversationById, createConversation, listMessages, insertMessage, nextSequence } from '../lib/state.js';
-import { streamChat } from '../lib/llm.js';
-import { onboardingPrompt } from '../lib/prompt.js';
+### Phase 2 – Backup
+- Run `gcloud auth application-default login` (password provided) and execute `gcloud firestore export gs://<project-id>-firestore-backups/firestore-backup-YYYYMMDD-HHMM/`.  
+- Confirm export finishes before any deletions.
 
-const router = express.Router();
-router.post('/', async (req, res) => {
-  try {
-    const { conversationId, content } = req.body || {};
-    if (!content || typeof content !== 'string' || !content.trim()) return res.status(400).json({ error: 'Message content is required.' });
-    let convo = conversationId ? await getConversationById(conversationId) : null;
-    if (!convo) {
-      convo = await createConversation({ agentSlug: 'onboarding', title: content.slice(0, 80), promptVersion: 'v1' });
-    }
-    const history = await listMessages(convo.id);
-    const seq = await nextSequence(convo.id);
-    await insertMessage({ conversationId: convo.id, role: 'user', content: content.trim(), sequence: seq });
-    const assembled = [
-      { role: 'system', content: onboardingPrompt },
-      ...history.map(m => ({ role: m.role, content: m.content })),
-      { role: 'user', content: content.trim() },
-    ];
-    const stream = await streamChat(assembled);
-    const chunks = [];
-    for await (const part of stream) {
-      const delta = part.choices?.[0]?.delta?.content;
-      if (delta) chunks.push(delta);
-    }
-    const reply = chunks.join('');
-    const replySeq = seq + 1;
-    await insertMessage({ conversationId: convo.id, role: 'assistant', content: reply, sequence: replySeq });
-    await supabase.from('conversations').update({ updated_at: new Date().toISOString(), last_message_at: new Date().toISOString() }).eq('id', convo.id);
-    return res.json({ conversationId: convo.id, reply });
-  } catch (err) {
-    console.error('messages error', err);
-    return res.status(500).json({ error: 'Unexpected server error.' });
-  }
-});
-export default router;
-```
-- Add `routes/conversations.js`:
-```js
-import express from 'express';
-import { getConversationById, listMessages } from '../lib/state.js';
-const router = express.Router();
-router.get('/:id', async (req, res) => {
-  try {
-    const convo = await getConversationById(req.params.id);
-    const messages = await listMessages(req.params.id);
-    res.json({ conversation: convo, messages });
-  } catch (err) {
-    res.status(404).json({ error: 'Conversation not found' });
-  }
-});
-export default router;
-```
-- package.json snippet (add to master_agent):
-```json
-{
-  "type": "module",
-  "scripts": { "dev": "node server.js" },
-  "dependencies": {
-    "express": "^4.19.2",
-    "@supabase/supabase-js": "^2.45.0",
-    "openai": "^4.57.0",
-    "dotenv": "^16.4.5"
-  }
-}
-```
+### Phase 3 – Cleanup
+- `firestore-tag-tests.ts`: provide a way to mark certain docs with `tag: "test"` when preparing specific test runs, ensuring future UI filters can exclude them.  
+- Collections in scope (from `src/config/firestore-collections.ts`): `contacts`, `introductions`, `jobToBeDone`, `skills`, `industries`, `verticals`, `productTypes`, `raisedCapitalRanges`, `fundingStages`, `companyHeadcountRanges`, `engineeringHeadcountRanges`, `targetDomains`, `roles`, `distributionCapabilities`, `distributionQualityBuckets`, `targetCriteria`, `companies`, `experiences`.  
+- Exclusions: system/diagnostic collections (e.g., `__*`, `test`), and any non-contacts config/prompt collections (none identified).
 
-### Phase 2 – Remove/retire langgraph Python code
-- Archive or delete: `app/graph.py`, `app/graph_entry.py`, `app/graph_wrapper.py`, `app/flows/*`, `app/evals/run_onboarding_judge.py` wiring (judge kept for later), langgraph configs.  
-- Keep `.env`, `app/clients/supabase.py` (for reference), and Supabase schema.
-
-### Phase 3 – Tests/smoke
-- Add minimal Jest or supertest-based checks (JS) for `/messages`:
-```bash
-PORT=8080 SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... OPENAI_API_KEY=... npm test
-```
-- Smoke: `node server.js` then `curl -X POST localhost:8080/messages -H "Content-Type: application/json" -d '{"content":"Hi, I am Alex"}'`
-
-### Phase 4 – Judge rewire (later)
-- Add JS judge script that reads Supabase conversations/messages and calls OpenAI with a rubric; keep Python judge for reference until superseded.
+### Phase 4 – Verification
+- Rerun inventory/count script; ensure each collection has only coverage-tagged docs and at least one doc to keep the graph visible.  
+- Spot-check Firestore console/production UI filter behavior.
 
 ## Testing Phase (per change set)
-- JS service: add Jest/supertest for `/messages` (happy path + missing content).  
-- Smoke locally with real Supabase/LLM: `node server.js` + `curl` above.  
-- Judge: `node scripts/run_judge.js --conversation-id <id> --threshold 0.6` (reads from Supabase; OpenAI model from `ONBOARDING_JUDGE_MODEL` or `OPENAI_MODEL`).
+- Dry-run inventory outputs (counts) before and after cleanup.  
+- No automated tests; rely on script logs and Firestore console verification.  
+- If needed, run `npm run seed:coverage-contacts` after cleanup to repopulate canonical coverage docs.
 
 ## Update READMEs (per service)
-- Master agent: add README explaining the new JS service, routes, env vars, Supabase expectations, and how state is loaded (system prompt + full history + new user message). Note that LLM judge exists but will be rewired later.
+- Add brief instructions to `services/investor-match-api/Readme.md` (or scripts/README) describing backup → cleanup → ensure coverage workflow and the `tag: "coverage"` convention.
 
 ## Specification of what should not be modified (for this plan)
-- Do not change Supabase schema or `.env` contents.  
-- Do not remove `app/clients/supabase.py` (reference) or LLM judge files; they will be rewired later.  
-- Do not touch other services in the repo.
+- Do not touch Supabase.  
+- Do not delete coverage docs; always retain/create at least one coverage doc per collection.  
+- Do not change Firestore security rules or indexes.
 
 ## Ready-to-use snippets (copy/paste)
-- Install deps (inside `services/agents/master_agent`):
+- Auth and backup:
 ```bash
-npm install express @supabase/supabase-js openai dotenv
+gcloud auth application-default login
+gcloud firestore export gs://<project-id>-firestore-backups/firestore-backup-YYYYMMDD-HHMM/
 ```
-- Start server:
+- Run cleanup scripts (inside `services/investor-match-api`):
 ```bash
-node server.js
+npm run ts-node scripts/firestore-inventory-coverage.ts
+npm run ts-node scripts/firestore-clean-non-coverage.ts
+npm run ts-node scripts/firestore-ensure-coverage.ts
 ```
-- Send a message:
+- Optional reseed:
 ```bash
-curl -X POST http://localhost:8080/messages \
-  -H "Content-Type: application/json" \
-  -d '{"content":"Hi, I am Alex"}'
+npm run seed:coverage-contacts
 ```
-- Run judge:
-```bash
-node scripts/run_judge.js --conversation-id <CONVO_ID> --threshold 0.6
-```
+
+## UI Agent Instructions
+- When you hand off to the UI session, explain the new `tag: "coverage"` and `tag: "test"` conventions so the filter can exclude those datasets.  
+- Provide the list of collections in scope (contacts + reverse-index collections) and remind them that each must retain at least one coverage doc so the graph stays visible.  
+- Mention the `firestore-tag-tests.ts` helper (via `npm run firestore:tag-tests`) for marking future test documents, so the filter has a predictable tag to target.  
 
 ## Current Priorities
-1) Scaffold JS service (server, routes, lib helpers) using chat-agent-api pattern.  
-2) Remove langgraph/Python flow files; preserve Supabase client/env/schema.  
-3) Add minimal tests and smoke with real Supabase/LLM.  
-4) Plan rewire of judge after JS service is live.
+1) Implement inventory + backup + cleanup + coverage-ensure scripts under `services/investor-match-api`.  
+2) Execute backup, then cleanup, then ensure coverage docs and tagging.  
+3) Verify collections/UI after cleanup and document the workflow.
 
 ## Status
-- JS master_agent deployed/configured with Kapso routes, Supabase prompt loader, parser integration, and version logging.
-- Conversation parser prompt loader now requires `agent_prompts` entries (system/user) and fails fast; Supabase creds added to `.env`.
-- Docs + readmes updated to reflect the new stack; tests (health) pass and final E2E was recorded.
+- Inventory in progress; scripts and backup not yet executed.
