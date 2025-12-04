@@ -69,6 +69,9 @@ All services are now live and in sync with the Node-based master-agent + parser 
 - Entry: `server.js` (Express) exposes `/messages`, `/conversations`, `/agents/whatsapp/inbound`, `parser` proxy, and the static `/chat.html` UI.
 - Parser config is required: `PARSER_URL` must be set (process refuses to start otherwise; tests exempt); parser proxy uses this URL with no local fallback. Keep it pointed to the deployed `conversation_parser`.
 - Startup/request logs print `version` and `revision` (from `K_REVISION` when present) to confirm the running build.
+- Onboarding gate: parser is called only when `flow=onboarding` AND the agent’s reply explicitly signals completion (phrases like “onboarding is complete”, “all information has been gathered”, “all set with your details”, etc.). Otherwise parser is skipped with `{ skipped: true, reason: 'onboarding not complete' }`.
+- In-memory cache per conversation (per instance) keeps prompt/history hot and defers DB writes; Supabase remains source of truth and is flushed on end signals (onboarding complete, goodbye/close intents, tool `end_conversation`). Cache miss → reload from Supabase.
+- Tool planner (cheap model) runs each turn to pick tools: `pick_agent` (chooses agent prompt; default triage prompt starts) and `end_conversation`; deterministic signals (inactivity/goodbye/explicit close) still apply.
 - Prompts: every route loads the latest `agent_prompts` (columns `agent_name`, `prompt_type`, `language`, `content`, `updated_at`) with `prompt_type='system'`; missing rows throw a hard error so your deployment fails fast if the prompt isn’t provisioned.
 - Conversation persistence: `lib/state.js` now records the Kapso metadata (external ID, phone, owner, contact) so repeated messages append to the same Supabase conversation ID. Each request also logs `[master-agent] version=1.0.0 method=...`.
 - Parser integration: after every reply the agent hits `PARSER_URL` (production parser) and includes the parser response in the `/agents/whatsapp/inbound` JSON; the parser proxies remain (and you can still call `/parser` manually). Readme documents the new flows.
@@ -82,3 +85,4 @@ All services are now live and in sync with the Node-based master-agent + parser 
 - `app/prompt_loader.py` fetches prompts from `agent_prompts` (agent_name/prompt_type/language) and now fails hard if missing (no fallback). Requires prompt rows in Supabase (e.g., agent_name `conversation_parser`, prompt_type `system` or `user`).
 - Logs `[ConversationParser] running (print check)` on startup to make the running revision easy to spot in Cloud Run logs.
 - Parser → API calls carry an `Idempotency-Key` (hash of mode/contact/body) with a 10s timeout and retries/backoff to handle transient API connectivity issues.
+- Payload normalization: if `companies` entries arrive with `company_name`, the parser maps them to `name` before hashing/sending to the Investor Match API to satisfy validation.

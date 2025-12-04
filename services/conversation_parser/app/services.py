@@ -123,13 +123,33 @@ async def call_investor_match(decision: LlmDecision) -> InvestorMatchResponse:
       - PATCH /v1/contacts/{id}
     """
 
+    def normalize_body(body: dict) -> dict:
+        # Fix common naming variants before hitting the API.
+        if not isinstance(body, dict):
+            return body
+        fixed = dict(body)
+        companies = fixed.get("companies")
+        if isinstance(companies, list):
+            normalized_companies = []
+            for comp in companies:
+                if not isinstance(comp, dict):
+                    normalized_companies.append(comp)
+                    continue
+                comp_copy = dict(comp)
+                if "name" not in comp_copy and comp_copy.get("company_name"):
+                    comp_copy["name"] = comp_copy.pop("company_name")
+                normalized_companies.append(comp_copy)
+            fixed["companies"] = normalized_companies
+        return fixed
+
+    normalized_body = normalize_body(decision.body)
     headers = get_default_headers()
     idempotency_key = hashlib.sha256(
         json.dumps(
             {
                 "mode": decision.mode,
                 "contact_id": decision.contact_id or "new",
-                "body": decision.body,
+                "body": normalized_body,
             },
             sort_keys=True,
         ).encode("utf-8")
@@ -140,7 +160,7 @@ async def call_investor_match(decision: LlmDecision) -> InvestorMatchResponse:
     print("🌐 CALLING INVESTOR MATCH API")
     print(f"Mode: {decision.mode}")
     print(f"Contact ID: {decision.contact_id}")
-    print(f"Payload: {decision.body}")
+    print(f"Payload: {normalized_body}")
     print(f"Idempotency-Key: {idempotency_key}")
     print("==============================\n")
 
@@ -163,9 +183,9 @@ async def call_investor_match(decision: LlmDecision) -> InvestorMatchResponse:
                 await asyncio.sleep(delay)
             try:
                 if decision.mode == "post":
-                    resp = await client.post(url, json=decision.body, headers=headers)
+                    resp = await client.post(url, json=normalized_body, headers=headers)
                 else:
-                    resp = await client.patch(url, json=decision.body, headers=headers)
+                    resp = await client.patch(url, json=normalized_body, headers=headers)
 
                 if resp.status_code < 500:
                     break

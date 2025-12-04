@@ -118,3 +118,16 @@ export async function recordAiEvent({ conversationId, eventType, status, model, 
   });
   if (error) throw error;
 }
+
+export async function upsertConversation(conversation) {
+  const { error } = await supabase
+    .from('conversations')
+    .upsert(conversation, { onConflict: 'id' });
+  if (error) throw error;
+}
+
+export async function insertMessagesBulk(messages) {
+  if (!messages || !messages.length) return;
+  const { error } = await supabase.from('messages').insert(messages);
+  if (error) throw error;
+}

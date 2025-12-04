@@ -14,6 +14,11 @@ import { companySyncService } from '../services/company-sync.service';
 import { distributionCapabilitySyncService } from '../services/distribution-capability-sync.service';
 import { Company } from '../models/company.model';
 
+export const normalizeString = (value?: string | null): string | null => {
+  if (!value) return null;
+  return value.trim().toLowerCase() || null;
+};
+
 const normalizeTags = (input: unknown): string[] => {
   if (!input) return [];
   const raw = Array.isArray(input) ? input : [input];
@@ -28,6 +33,29 @@ export type ContactRequestExtras = {
   target_criteria?: TargetCriterionInput[];
   companies?: CompanyInput[];
 };
+
+export async function findExistingContact(body: any): Promise<Contact | null> {
+  const email = normalizeString(body?.email);
+  const linkedin = normalizeString(body?.linkedin_url);
+
+  if (email) {
+    const snapshot = await collections.contacts().where('email', '==', email).limit(1).get();
+    if (!snapshot.empty) {
+      const doc = snapshot.docs[0];
+      return { ...(doc.data() as Contact), id: doc.id };
+    }
+  }
+
+  if (linkedin) {
+    const snapshot = await collections.contacts().where('linkedin_url', '==', linkedin).limit(1).get();
+    if (!snapshot.empty) {
+      const doc = snapshot.docs[0];
+      return { ...(doc.data() as Contact), id: doc.id };
+    }
+  }
+
+  return null;
+}
 
 interface PreparedContactPayload {
   contact: ContactInput;
@@ -281,6 +309,13 @@ export class ContactHandler {
    */
   async createContact(req: Request, res: Response): Promise<void> {
     try {
+      // Deduplicate by email or linkedin_url before creating.
+      const duplicate = await findExistingContact(req.body);
+      if (duplicate) {
+        res.status(200).json(duplicate);
+        return;
+      }
+
       const contactRef = collections.contacts().doc();
       const {
         contact: preparedContact,
@@ -1226,6 +1261,8 @@ export function prepareContactPayload(
     ...(existing ? stripContactSystemFields(existing) : {}),
     ...(rest as ContactInput)
   };
+  base.email = normalizeString(base.email);
+  base.linkedin_url = normalizeString(base.linkedin_url);
 
   base.experiences = base.experiences || [];
   base.raised_capital_range_ids = base.raised_capital_range_ids || [];
