@@ -1,4 +1,6 @@
 # services.py
+import asyncio
+import hashlib
 import json
 import traceback
 from typing import Dict, Any, Optional
@@ -122,34 +124,65 @@ async def call_investor_match(decision: LlmDecision) -> InvestorMatchResponse:
     """
 
     headers = get_default_headers()
+    idempotency_key = hashlib.sha256(
+        json.dumps(
+            {
+                "mode": decision.mode,
+                "contact_id": decision.contact_id or "new",
+                "body": decision.body,
+            },
+            sort_keys=True,
+        ).encode("utf-8")
+    ).hexdigest()
+    headers["Idempotency-Key"] = idempotency_key
 
     print("\n==============================")
     print("🌐 CALLING INVESTOR MATCH API")
     print(f"Mode: {decision.mode}")
     print(f"Contact ID: {decision.contact_id}")
     print(f"Payload: {decision.body}")
+    print(f"Idempotency-Key: {idempotency_key}")
     print("==============================\n")
 
-    async with httpx.AsyncClient() as client:
-        try:
-            if decision.mode == "post":
-                url = f"{INVESTOR_MATCH_API_BASE}/v1/contacts"
-                resp = await client.post(url, json=decision.body, headers=headers)
+    url = f"{INVESTOR_MATCH_API_BASE}/v1/contacts"
+    if decision.mode == "patch":
+        if not decision.contact_id:
+            raise ValueError("PATCH mode requires contact_id in LlmDecision")
+        url = f"{INVESTOR_MATCH_API_BASE}/v1/contacts/{decision.contact_id}"
+    elif decision.mode != "post":
+        raise ValueError(f"Unknown mode: {decision.mode}")
 
-            elif decision.mode == "patch":
-                if not decision.contact_id:
-                    raise ValueError("PATCH mode requires contact_id in LlmDecision")
-                url = f"{INVESTOR_MATCH_API_BASE}/v1/contacts/{decision.contact_id}"
-                resp = await client.patch(url, json=decision.body, headers=headers)
+    timeout = httpx.Timeout(10.0)
+    backoff = [0.5, 1.0, 2.0]  # seconds
+    resp = None
+    last_error = None
 
-            else:
-                raise ValueError(f"Unknown mode: {decision.mode}")
+    async with httpx.AsyncClient(timeout=timeout) as client:
+        for attempt, delay in enumerate([0.0] + backoff):
+            if delay:
+                await asyncio.sleep(delay)
+            try:
+                if decision.mode == "post":
+                    resp = await client.post(url, json=decision.body, headers=headers)
+                else:
+                    resp = await client.patch(url, json=decision.body, headers=headers)
 
-        except Exception as e:
-            print("❌ ERROR SENDING REQUEST TO INVESTOR MATCH API")
-            print(str(e))
-            print(traceback.format_exc())
-            raise
+                if resp.status_code < 500:
+                    break
+
+                last_error = Exception(f"server error {resp.status_code}: {resp.text}")
+                print(f"⚠️ attempt {attempt + 1} failed with server error {resp.status_code}, retrying...")
+            except httpx.HTTPError as exc:
+                last_error = exc
+                print(f"⚠️ attempt {attempt + 1} failed with HTTP error: {exc}")
+                print(traceback.format_exc())
+        else:
+            pass
+
+    if resp is None or (resp.status_code >= 500 and last_error):
+        print("❌ ERROR SENDING REQUEST TO INVESTOR MATCH API")
+        print(last_error)
+        raise last_error
 
     print("\n==============================")
     print("📥 INVESTOR MATCH API RESPONSE")
