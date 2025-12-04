@@ -102,9 +102,13 @@ export async function updateConversationMeta(conversationId, patch) {
 }
 
 export async function getAgentBySlug(slug) {
-  const { data, error } = await supabase.from('agents').select('*').eq('slug', slug).single();
+  const { data, error } = await supabase
+    .from('agents')
+    .select('*')
+    .or(`slug.eq.${slug},name.eq.${slug},agent_name.eq.${slug}`)
+    .maybeSingle();
   if (error) throw error;
-  return data;
+  return data || null;
 }
 
 export async function recordAiEvent({ conversationId, eventType, status, model, metadata }) {
