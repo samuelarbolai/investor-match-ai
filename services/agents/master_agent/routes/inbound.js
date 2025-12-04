@@ -128,10 +128,10 @@ router.post('/agents/whatsapp/inbound', async (req, res) => {
 
     // initial default agent is triage until tool picks otherwise
     const initialAgentSlug = (event.metadata?.flow || 'default_triage').toLowerCase();
-    let agent = null;
-    try {
-      agent = await getAgentBySlug(initialAgentSlug);
-    } catch (_) {}
+    const agent = await getAgentBySlug(initialAgentSlug);
+    if (!agent) {
+      throw new Error(`Agent not found for slug ${initialAgentSlug}`);
+    }
 
     let conversation = null;
     if (event.conversationId) {
@@ -143,7 +143,7 @@ router.post('/agents/whatsapp/inbound', async (req, res) => {
     if (!conversation) {
       try {
         conversation = await createConversation({
-          agentId: agent ? agent.id : null,
+          agentId: agent.id,
           title: content.slice(0, 80),
           promptVersion: null,
           externalConversationId: event.conversationId,
@@ -166,7 +166,7 @@ router.post('/agents/whatsapp/inbound', async (req, res) => {
       const { content: systemPrompt, version: promptVersion } = await loadPrompt('default_triage');
       cache = {
         conversationId: conversation.id,
-        agentId: agent ? agent.id : null,
+        agentId: agent.id,
         agentSlug: 'default_triage',
         prompt: systemPrompt,
         promptVersion,
@@ -194,19 +194,15 @@ router.post('/agents/whatsapp/inbound', async (req, res) => {
     let agentSlug = cache.agentSlug;
     if (tool?.name === 'pick_agent' && tool.args?.agent) {
       agentSlug = tool.args.agent.toLowerCase();
-      try {
-        const { content: promptContent, version: promptVersion } = await loadPrompt(agentSlug);
-        let selectedAgent = null;
-        try {
-          selectedAgent = await getAgentBySlug(agentSlug);
-        } catch (_) {}
-        cache.agentSlug = agentSlug;
-        cache.agentId = selectedAgent ? selectedAgent.id : cache.agentId;
-        cache.prompt = promptContent;
-        cache.promptVersion = promptVersion;
-      } catch (err) {
-        console.error('Failed to load agent prompt', err);
+      const selectedAgent = await getAgentBySlug(agentSlug);
+      if (!selectedAgent) {
+        throw new Error(`Agent not found for slug ${agentSlug}`);
       }
+      const { content: promptContent, version: promptVersion } = await loadPrompt(agentSlug);
+      cache.agentSlug = agentSlug;
+      cache.agentId = selectedAgent.id;
+      cache.prompt = promptContent;
+      cache.promptVersion = promptVersion;
     }
 
     const seq = (cache.messages[cache.messages.length - 1]?.sequence || 0) + 1;
