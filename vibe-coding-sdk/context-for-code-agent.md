@@ -67,6 +67,8 @@ All services are now live and in sync with the Node-based master-agent + parser 
 
 - **Master Agent (JS rebuild)**
 - Entry: `server.js` (Express) exposes `/messages`, `/conversations`, `/agents/whatsapp/inbound`, `parser` proxy, and the static `/chat.html` UI.
+- Parser config is required: `PARSER_URL` must be set (process refuses to start otherwise; tests exempt); parser proxy uses this URL with no local fallback. Keep it pointed to the deployed `conversation_parser`.
+- Startup/request logs print `version` and `revision` (from `K_REVISION` when present) to confirm the running build.
 - Prompts: every route loads the latest `agent_prompts` (columns `agent_name`, `prompt_type`, `language`, `content`, `updated_at`) with `prompt_type='system'`; missing rows throw a hard error so your deployment fails fast if the prompt isn’t provisioned.
 - Conversation persistence: `lib/state.js` now records the Kapso metadata (external ID, phone, owner, contact) so repeated messages append to the same Supabase conversation ID. Each request also logs `[master-agent] version=1.0.0 method=...`.
 - Parser integration: after every reply the agent hits `PARSER_URL` (production parser) and includes the parser response in the `/agents/whatsapp/inbound` JSON; the parser proxies remain (and you can still call `/parser` manually). Readme documents the new flows.

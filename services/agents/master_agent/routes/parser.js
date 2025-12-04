@@ -3,10 +3,13 @@ import express from 'express';
 const router = express.Router();
 
 // Proxy to existing conversation_parser service (Python) using same schema as before.
-const PARSER_URL = process.env.PARSER_URL || 'http://localhost:8000/v1/conversations';
+const PARSER_URL = process.env.PARSER_URL;
 
 router.post('/parser', async (req, res) => {
   try {
+    if (!PARSER_URL) {
+      return res.status(500).json({ error: 'PARSER_URL is not configured' });
+    }
     const { conversation } = req.body || {};
     if (!conversation || typeof conversation !== 'string' || !conversation.trim()) {
       return res.status(400).json({ error: 'conversation text required' });

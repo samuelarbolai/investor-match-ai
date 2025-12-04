@@ -1,39 +1,29 @@
 # Investor Match Backend — Current Plan (Template-Aligned)
 
 ## Plan Summary
-Add backend support to exclude contacts by tag so frontend can omit `coverage`/`test` (or any provided tags) across all contact list and match endpoints, only when `exclude_tags` is provided.
+Fix missing Firestore contacts by ensuring the master-agent always forwards conversations to the conversation_parser: make `PARSER_URL` mandatory at startup, surface version/revision in logs, and update docs so deployments configure the parser endpoint.
 
 ## Plan Architecture (Flow)
-1) Contract: add `exclude_tags` input to endpoints; contacts store a single `tag` string (e.g., `coverage`, `test`).  
-2) Validation: extend Joi schemas to accept `exclude_tags` where applicable.  
-3) Logic: filter out contacts whose `tag` matches any `exclude_tags` in list and match flows.  
-4) Docs/Tests: update Swagger blocks and add unit tests for exclusion.
+1) Startup guard: master-agent process refuses to start if `PARSER_URL` is absent (except tests).  
+2) Observability: request/startup logs include package version and revision to confirm the running build, and parser proxy uses the configured endpoint.  
+3) Documentation: record the env requirement and flow so deploys include the parser URL.
 
 ## Plan Structure (Directories & Files)
-- Validators: `services/investor-match-api/src/validators/contact.validator.ts` (query/body schemas for list/filter/match).  
-- Handlers: `services/investor-match-api/src/handlers/contact.handler.ts` (`GET /v1/contacts`, `POST /v1/contacts/filter`, `GET /v1/contacts/{id}/matches`, plus campaign contacts if present).  
-- Services: `services/investor-match-api/src/services/matching.service.ts` (filtering/matching logic).  
-- Docs: Swagger JSDoc blocks in handlers (or `src/config/swagger.ts` if centralized).  
-- Tests: extend/add unit tests near matching service/handlers.
+- App bootstrap/logging: `services/agents/master_agent/server.js`.  
+- Parser proxy: `services/agents/master_agent/routes/parser.js`.  
+- Agent context/docs: `vibe-coding-sdk/context-for-code-agent.md`.
 
 ## Modifications (phased, with file targets)
-### Phase 1 – Contract
-- Add optional `exclude_tags` (array of strings) to request contract for all contact list/match endpoints.  
-- Clarify tags model: use `tag` string on contact docs; exclusion checks `contact.tag` against provided values.
+### Phase 1 – Guard + logging
+- Add startup check for `PARSER_URL` (skip only in tests) and include `version`/`revision` in per-request and startup logs.
 
-### Phase 2 – Validation
-- Update relevant Joi schemas to accept optional `exclude_tags` array (query or body per endpoint).
+### Phase 2 – Parser proxy alignment
+- Require configured parser URL in `/parser` proxy (remove silent fallback).
 
-### Phase 3 – Logic
-- In list/filter/match flows, skip any contact whose `tag` is in `exclude_tags`.  
-- Apply to all endpoints returning contact lists/matches (including campaign contacts if handler exists).
-
-### Phase 4 – Docs & Tests
-- Update Swagger blocks with `exclude_tags` parameter examples.  
-- Add/extend unit tests to cover exclusion in filter/matching.
+### Phase 3 – Docs
+- Update agent context to note the required parser env and startup guard for ingestion.
 
 ## Notes / Confirmed Inputs
-- Endpoints: all should support exclusion.  
-- Behavior: only exclude when `exclude_tags` is provided (no default exclusion).  
-- Matches: exclusion applies to candidates in matches.  
-- Tag model: contacts carry single `tag` string (e.g., `coverage`, `test`).
+- Expected ingestion path: master-agent → conversation_parser → investor-match-api → Firestore.  
+- Current issue: `PARSER_URL` missing in deployed master-agent, so parser never called and contacts stay out of Firestore.  
+- Logging should help verify the deployed revision matches the latest build.

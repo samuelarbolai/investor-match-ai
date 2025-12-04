@@ -48,5 +48,6 @@ jobs:
                             SUPABASE_ALLOW_MOCKS=false,\
                             KAPSO_MIDDLEWARE_BASE_URL=https://kapso-middleware-23715448976.us-east1.run.app,\
                             KAPSO_USE_FAKE=false,\
+                            PARSER_URL=${{ secrets.PARSER_URL }}
                             IM_API_BASE_URL=https://investor-match-api-23715448976.us-east1.run.app,\
                             IM_API_KEY="
