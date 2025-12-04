@@ -47,6 +47,18 @@ export async function getConversationByExternalId(externalId) {
   return data;
 }
 
+export async function getConversationByAgentAndPhone(agentId, phoneNumber) {
+  if (!agentId || !phoneNumber) return null;
+  const { data, error } = await supabase
+    .from('conversations')
+    .select('*')
+    .eq('agent_id', agentId)
+    .eq('phone_number', phoneNumber)
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
 export async function listMessages(conversationId) {
   const { data, error } = await supabase
     .from('messages')

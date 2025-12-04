@@ -1,7 +1,16 @@
 import express from 'express';
 import { runChat } from '../lib/llm.js';
 import { loadPrompt } from '../lib/prompt.js';
-import { createConversation, getConversationByExternalId, insertMessage, listMessages, nextSequence, updateConversationMeta, getAgentBySlug } from '../lib/state.js';
+import {
+  createConversation,
+  getConversationByExternalId,
+  getConversationByAgentAndPhone,
+  insertMessage,
+  listMessages,
+  nextSequence,
+  updateConversationMeta,
+  getAgentBySlug,
+} from '../lib/state.js';
 
 const router = express.Router();
 
@@ -36,16 +45,28 @@ router.post('/agents/whatsapp/inbound', async (req, res) => {
     if (event.conversationId) {
       conversation = await getConversationByExternalId(event.conversationId);
     }
+    if (!conversation && agent && event.phoneNumber) {
+      conversation = await getConversationByAgentAndPhone(agent.id, event.phoneNumber);
+    }
     if (!conversation) {
-      conversation = await createConversation({
-        agentId: agent ? agent.id : null,
-        title: content.slice(0, 80),
-        promptVersion,
-        externalConversationId: event.conversationId,
-        phoneNumber: event.phoneNumber,
-        ownerId: event.ownerId,
-        contactId: event.contactId,
-      });
+      try {
+        conversation = await createConversation({
+          agentId: agent ? agent.id : null,
+          title: content.slice(0, 80),
+          promptVersion,
+          externalConversationId: event.conversationId,
+          phoneNumber: event.phoneNumber,
+          ownerId: event.ownerId,
+          contactId: event.contactId,
+        });
+      } catch (err) {
+        // Handle race: if a conversation was just created for this agent/phone, reuse it.
+        if (err.code === '23505' && agent && event.phoneNumber) {
+          conversation = await getConversationByAgentAndPhone(agent.id, event.phoneNumber);
+        } else {
+          throw err;
+        }
+      }
     }
     const history = await listMessages(conversation.id);
     const seq = await nextSequence(conversation.id);
