@@ -105,7 +105,7 @@ export async function getAgentBySlug(agent_name) {
   const { data, error } = await supabase
     .from('agent_prompts')
     .select('*')
-    .eq('agent_name',lookup_value)
+    .eq('agent_name',agent_name)
     .maybeSingle();
   if (error) throw error;
   return data || null;
