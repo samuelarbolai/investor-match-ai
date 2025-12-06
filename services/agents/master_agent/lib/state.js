@@ -103,7 +103,7 @@ export async function updateConversationMeta(conversationId, patch) {
 
 export async function getAgentBySlug(slug) {
   const { data, error } = await supabase
-    .from('agents')
+    .from('agent_prompts')
     .select('*')
     .or(`slug.eq.${slug},agent_name.eq.${slug}`)
     .maybeSingle();
