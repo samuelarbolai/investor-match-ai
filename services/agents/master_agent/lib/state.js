@@ -105,7 +105,7 @@ export async function getAgentBySlug(slug) {
   const { data, error } = await supabase
     .from('agents')
     .select('*')
-    .or(`slug.eq.${slug},name.eq.${slug},agent_name.eq.${slug}`)
+    .eq('slug', slug)
     .maybeSingle();
   if (error) throw error;
   return data || null;
