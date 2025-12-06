@@ -101,11 +101,11 @@ export async function updateConversationMeta(conversationId, patch) {
   if (error) throw error;
 }
 
-export async function getAgentBySlug(slug) {
+export async function getAgentBySlug(agent_name) {
   const { data, error } = await supabase
     .from('agent_prompts')
     .select('*')
-    .or(`slug.eq.${slug},agent_name.eq.${slug}`)
+    .or(`slug.eq.${agent_name},name.eq.${agent_name},agent_name.eq.${agent_name}`)
     .maybeSingle();
   if (error) throw error;
   return data || null;

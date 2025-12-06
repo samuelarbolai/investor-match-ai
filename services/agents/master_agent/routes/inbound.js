@@ -127,10 +127,10 @@ router.post('/agents/whatsapp/inbound', async (req, res) => {
     if (!content) return res.status(400).json({ error: 'Message content is required.' });
 
     // initial default agent is triage until tool picks otherwise
-    const initialAgentSlug = (event.metadata?.flow || 'default_triage').toLowerCase();
-    const agent = await getAgentBySlug(initialAgentSlug);
+    const initialAgentName = (event.metadata?.flow || 'default_triage').toLowerCase();
+    const agent = await getAgentBySlug(initialAgentName);
     if (!agent) {
-      throw new Error(`Agent not found for slug ${initialAgentSlug}`);
+      throw new Error(`Agent not found for slug ${initialAgentName}`);
     }
 
     let conversation = null;
