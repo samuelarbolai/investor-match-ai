@@ -3,6 +3,8 @@
 ## Plan Summary
 Add conversation state caching so the heavy prompt load + history stitching happens once at conversation start, and persist/flush to Supabase only on explicit end signals. Blend deterministic signals (inactivity, explicit close) with an LLM “tool planner” that selects tools each turn (end-conversation, pick-agent). A default “triage” prompt handles the very first turn before an agent is picked. Keep parser gating and retries intact.
 
+Status note: work in progress — investigating Supabase agent lookup and parser URL env issues; master-agent at version 1.0.2; next session continue debugging deployment/env and confirm prompts/agents exist.
+
 ## Plan Architecture (Flow)
 1) Startup guard: master-agent process refuses to start if `PARSER_URL` is absent (except tests).  
 2) Observability: request/startup logs include package version and revision to confirm the running build, and parser proxy uses the configured endpoint.  

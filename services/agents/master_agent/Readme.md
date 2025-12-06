@@ -49,3 +49,4 @@ npm test   # supertest health check
 - No fallbacks: missing prompt rows will cause 500s on `/messages`. Add rows in `agent_prompts` for each agent (`onboarding`, `campaign`, `feedback`, `setter`) with `prompt_type='system'`.
 - Parser handoff is gated: parser is called only when `flow=onboarding` AND the agent’s reply explicitly signals completion (phrases like “onboarding is complete”, “all information has been gathered”, “all set with your details”, etc.). Otherwise parser is skipped.
 - Tool planner + cache: a lightweight tool-planner LLM decides per turn whether to pick an agent or end the conversation; a per-instance cache keeps prompt/history hot and defers DB writes, flushing to Supabase on end signals (completion, goodbye/close, or explicit tool).
+- Agent lookup now resolves by `agent_name`/`name`/`slug` to match Supabase schema (if you only have `agent_name`, it will still find the agent).
