@@ -156,11 +156,3 @@ Please read it carefully and output ONLY the JSON object required by the schema 
 
 def get_system_prompt() -> str:
     return get_prompt(AGENT_NAME, "system", default=DEFAULT_SYSTEM_PROMPT)
-
-
-def get_user_prompt_template() -> str:
-    return get_prompt(AGENT_NAME, "user", default=DEFAULT_USER_PROMPT_TEMPLATE)
-
-
-def build_user_prompt(conversation: str) -> str:
-    return get_user_prompt_template().format(conversation=conversation)

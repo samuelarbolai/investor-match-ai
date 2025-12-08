@@ -15,7 +15,7 @@ from app.config import (
     OPENAI_API_KEY
 )
 from app.models import InvestorMatchResponse, LlmDecision
-from app.prompts import get_system_prompt, build_user_prompt
+from app.prompts import get_system_prompt
 
 
 # ---------------------------------------------------------
@@ -33,12 +33,21 @@ async def _call_llm(conversation: str) -> str:
     Returns raw LLM text output.
     """
 
-    user_prompt = build_user_prompt(conversation)
+    user_prompt = "Please read the entire conversation in the system prompt and output ONLY the required JSON object as specified in the system prompt.\n\n Guardrails:\n If not enough information, don't output a valid jason, just output 'No valida data'"
     system_prompt = get_system_prompt()
+
+    print("User Prompt:", user_prompt)
+    print("System Prompt:", system_prompt[:100])
+
+    system_prompt = system_prompt.replace("{conversation}", conversation)
+
+    #.format(conversation=conversation)
+
 
     print("\n==============================")
     print("🤖 CALLING LLM WITH PROMPT:")
-    print(user_prompt)
+    print("User Prompt:", user_prompt)
+    print("System Prompt:", system_prompt[:100])
     print("==============================\n")
 
     try:
