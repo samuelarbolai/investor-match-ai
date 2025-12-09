@@ -419,6 +419,13 @@ export class ContactHandler {
    *             - updated_at
    *         description: Field used to sort results (default created_at)
    *       - in: query
+   *         name: tags
+   *         schema:
+   *           type: array
+   *           items:
+   *             type: string
+   *         description: Optional tags to include - only show contacts with these tags (e.g., test, coverage)
+   *       - in: query
    *         name: exclude_tags
    *         schema:
    *           type: array
@@ -480,15 +487,17 @@ export class ContactHandler {
       return;
     }
 
-    const { limit, startAfter, order_by, order_direction, exclude_tags } = query as {
+    const { limit, startAfter, order_by, order_direction, exclude_tags, tags } = query as {
       limit: number;
       startAfter?: string;
       order_by: ListContactsSortField;
       order_direction: FirebaseFirestore.OrderByDirection;
       exclude_tags?: string[] | string;
+      tags?: string[] | string;
     };
     const sortField = mapSortField(order_by as ListContactsSortField);
     const excluded = new Set(normalizeTags(exclude_tags));
+    const included = new Set(normalizeTags(tags));
 
     let baseQuery = collections.contacts()
       .orderBy(sortField, order_direction as FirebaseFirestore.OrderByDirection)
@@ -526,9 +535,23 @@ export class ContactHandler {
       const batchContacts = snapshot.docs
         .map(doc => ({ id: doc.id, ...doc.data() } as Contact))
         .filter(contact => {
-          if (excluded.size === 0) return true;
           const tag = typeof contact.tag === 'string' ? contact.tag.trim().toLowerCase() : null;
-          return !tag || !excluded.has(tag);
+
+          // If tags (include) is specified, ONLY include contacts with those tags
+          if (included.size > 0) {
+            if (!tag || !included.has(tag)) {
+              return false;
+            }
+          }
+
+          // If exclude_tags is specified, exclude contacts with those tags
+          if (excluded.size > 0) {
+            if (tag && excluded.has(tag)) {
+              return false;
+            }
+          }
+
+          return true;
         });
 
       for (const contact of batchContacts) {
@@ -860,6 +883,11 @@ export class ContactHandler {
    *                     max:
    *                       type: integer
    *                 description: "Numeric filters for introduction stage counts per contact (keys: prospect, lead, to-meet, met, not-in-campaign, disqualified)"
+   *               tags:
+   *                 type: array
+   *                 items:
+   *                   type: string
+   *                 description: Tags to include - only show contacts with these tags (e.g., test, coverage)
    *               exclude_tags:
    *                 type: array
    *                 items:
@@ -908,7 +936,8 @@ export class ContactHandler {
         stage_count_filters,
         company_names,
         company_scope,
-        exclude_tags
+        exclude_tags,
+        tags
       } = req.body;
 
       const result = await matchingService.filterContacts({
@@ -924,7 +953,8 @@ export class ContactHandler {
         stage_count_filters,
         company_names,
         company_scope,
-        exclude_tags: normalizeTags(exclude_tags)
+        exclude_tags: normalizeTags(exclude_tags),
+        tags: normalizeTags(tags)
       });
 
       res.json(result);

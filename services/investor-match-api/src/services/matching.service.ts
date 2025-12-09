@@ -37,6 +37,7 @@ export interface FilterCriteria {
   company_names?: string[];
   company_scope?: CompanyScope;
   exclude_tags?: string[];
+  tags?: string[];
 }
 
 export interface FilterResult {
@@ -83,10 +84,12 @@ export class MatchingService {
       stage_count_filters,
       company_names,
       company_scope,
-      exclude_tags
+      exclude_tags,
+      tags
     } = criteria;
 
     const excludeSet = new Set((exclude_tags || []).map(tag => this.normalizeTag(tag)).filter(Boolean) as string[]);
+    const includeSet = new Set((tags || []).map(tag => this.normalizeTag(tag)).filter(Boolean) as string[]);
 
     const normalizedCompanyNames = this.normalizeCompanyNames(company_names);
     const normalizedCompanySlugs = normalizedCompanyNames.map(name => ensureValidDocumentId(name));
@@ -148,10 +151,19 @@ export class MatchingService {
         
         const contact = doc.data() as Contact;
         
-        // Apply filters
+        // Apply tag filters
+        const contactTag = this.normalizeTag(contact.tag);
+
+        // If tags (include) is specified, ONLY include contacts with those tags
+        if (includeSet.size > 0) {
+          if (!contactTag || !includeSet.has(contactTag)) {
+            continue;
+          }
+        }
+
+        // If exclude_tags is specified, exclude contacts with those tags
         if (excludeSet.size > 0) {
-          const tag = this.normalizeTag(contact.tag);
-          if (tag && excludeSet.has(tag)) {
+          if (contactTag && excludeSet.has(contactTag)) {
             continue;
           }
         }

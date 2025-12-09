@@ -8,6 +8,7 @@ export const listContactsQuerySchema = Joi.object({
   startAfter: Joi.string().optional(),
   order_by: Joi.string().valid(...LIST_CONTACTS_SORT_FIELDS).default('created_at'),
   order_direction: Joi.string().valid('asc', 'desc').default('asc'),
+  tags: Joi.array().items(Joi.string().trim()).optional(),
   exclude_tags: Joi.array().items(Joi.string().trim()).optional()
 });
 
@@ -155,6 +156,7 @@ export const updateContactSchema = createContactSchema.fork(
 export const matchQuerySchema = Joi.object({
   targetType: Joi.string().valid('founder', 'investor', 'both').default('investor'),
   limit: Joi.number().integer().min(1).max(100).default(20),
+  tags: Joi.array().items(Joi.string().trim()).optional(),
   exclude_tags: Joi.array().items(Joi.string().trim()).optional()
 });
 
