@@ -130,6 +130,36 @@ export async function upsertConversation(conversation) {
   if (error) throw error;
 }
 
+export async function upsertConversationByAgentAndPhone({
+  agentId,
+  phoneNumber,
+  title,
+  promptVersion = null,
+  externalConversationId = null,
+  ownerId = null,
+  contactId = null,
+}) {
+  const { data, error } = await supabase
+    .from('conversations')
+    .upsert(
+      {
+        agent_id: agentId,
+        phone_number: phoneNumber,
+        external_conversation_id: externalConversationId,
+        owner_id: ownerId,
+        contact_id: contactId,
+        title,
+        prompt_version: promptVersion,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'agent_id,phone_number', ignoreDuplicates: false }
+    )
+    .select('*')
+    .single();
+  if (error) throw error;
+  return data;
+}
+
 export async function insertMessagesBulk(messages) {
   if (!messages || !messages.length) return;
   const { error } = await supabase.from('messages').insert(messages);

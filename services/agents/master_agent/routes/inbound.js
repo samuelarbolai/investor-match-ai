@@ -2,13 +2,12 @@ import express from 'express';
 import { runChat } from '../lib/llm.js';
 import { loadPrompt } from '../lib/prompt.js';
 import {
-  createConversation,
   getConversationByExternalId,
-  getConversationByAgentAndPhone,
   listMessages,
   getAgentBySlug,
   upsertConversation,
   insertMessagesBulk,
+  upsertConversationByAgentAndPhone,
 } from '../lib/state.js';
 import { getCached, setCached, touch, deleteCached } from '../lib/cache.js';
 import { planTools } from '../lib/tool-planner.js';
@@ -121,6 +120,8 @@ async function flushConversation(cacheEntry, { parserUrl, forceParser = false, o
 }
 
 router.post('/agents/whatsapp/inbound', async (req, res) => {
+  const requestId = Math.random().toString(36).substring(7);
+  console.log(`[request-start] id=${requestId} phoneNumber=${req.body?.phone_number} conversationId=${req.body?.conversation_id} flow=${req.body?.metadata?.flow}`);
   try {
     const event = normalizeEvent(req.body);
     const content = (event.content || '').trim();
@@ -138,30 +139,25 @@ router.post('/agents/whatsapp/inbound', async (req, res) => {
       conversation = await getConversationByExternalId(event.conversationId);
     }
     if (!conversation && agent && event.phoneNumber) {
-      conversation = await getConversationByAgentAndPhone(agent.id, event.phoneNumber);
-    }
-    if (!conversation) {
-      try {
-        conversation = await createConversation({
-          agentId: agent.id,
-          title: content.slice(0, 80),
-          promptVersion: null,
-          externalConversationId: event.conversationId,
-          phoneNumber: event.phoneNumber,
-          ownerId: event.ownerId,
-          contactId: event.contactId,
-        });
-      } catch (err) {
-        if (err.code === '23505' && agent && event.phoneNumber) {
-          conversation = await getConversationByAgentAndPhone(agent.id, event.phoneNumber);
-        } else {
-          throw err;
-        }
-      }
+      // Use upsert to handle race conditions atomically
+      console.log(`[conversation-upsert] id=${requestId} attempting for agentId=${agent.id} phoneNumber=${event.phoneNumber}`);
+      conversation = await upsertConversationByAgentAndPhone({
+        agentId: agent.id,
+        phoneNumber: event.phoneNumber,
+        title: content.slice(0, 80),
+        promptVersion: null,
+        externalConversationId: event.conversationId,
+        ownerId: event.ownerId,
+        contactId: event.contactId,
+      });
+      console.log(`[conversation-upserted] id=${requestId} conversationId=${conversation.id} agentId=${agent.id} phoneNumber=${event.phoneNumber}`);
+    } else if (conversation) {
+      console.log(`[conversation-found] id=${requestId} conversationId=${conversation.id} agentId=${agent.id} phoneNumber=${event.phoneNumber}`);
     }
 
     let cache = getCached(conversation.id);
     if (!cache) {
+      console.log(`[cache-miss] id=${requestId} conversationId=${conversation.id} loading from DB`);
       const history = await listMessages(conversation.id);
       const { content: systemPrompt, version: promptVersion } = await loadPrompt('default_triage');
       cache = {
@@ -180,6 +176,9 @@ router.post('/agents/whatsapp/inbound', async (req, res) => {
         lastTouchedAt: Date.now(),
       };
       setCached(conversation.id, cache);
+      console.log(`[cache-created] id=${requestId} conversationId=${conversation.id} messageCount=${history?.length || 0} agentSlug=${cache.agentSlug}`);
+    } else {
+      console.log(`[cache-hit] id=${requestId} conversationId=${conversation.id} agentSlug=${cache.agentSlug} messageCount=${cache.messages.length} parserSentAt=${cache.parserSentAt}`);
     }
 
     // Tool planner (cheap model)
@@ -193,7 +192,9 @@ router.post('/agents/whatsapp/inbound', async (req, res) => {
 
     let agentSlug = cache.agentSlug;
     if (tool?.name === 'pick_agent' && tool.args?.agent) {
-      agentSlug = tool.args.agent.toLowerCase();
+      const newAgentSlug = tool.args.agent.toLowerCase();
+      console.log(`[agent-switch] id=${requestId} conversationId=${conversation.id} from=${agentSlug} to=${newAgentSlug} reason=tool-planner`);
+      agentSlug = newAgentSlug;
       const selectedAgent = await getAgentBySlug(agentSlug);
       if (!selectedAgent) {
         throw new Error(`Agent not found for slug ${agentSlug}`);
@@ -225,7 +226,11 @@ router.post('/agents/whatsapp/inbound', async (req, res) => {
     const closeIntent = isCloseIntent(reply);
     const plannerEnd = tool?.name === 'end_conversation';
 
+    console.log(`[parser-decision] id=${requestId} conversationId=${conversation.id} agentSlug=${cache.agentSlug} onboardingDone=${onboardingDone} parserSentAt=${cache.parserSentAt} hasParserUrl=${!!parserUrl}`);
+    console.log(`[parser-decision] id=${requestId} reply="${reply.slice(0, 100)}..." contains completion phrase: ${onboardingComplete(reply)}`);
+
     if (parserUrl && onboardingDone && !cache.parserSentAt) {
+      console.log(`[parser-calling] id=${requestId} conversationId=${conversation.id} phoneNumber=${event.phoneNumber} transcript length=${cache.messages.length}`);
       const transcript = buildTranscript(cache.messages);
       try {
         const resp = await fetch(parserUrl, {
@@ -237,10 +242,13 @@ router.post('/agents/whatsapp/inbound', async (req, res) => {
         if (!resp.ok) throw new Error(`parser ${resp.status}: ${text}`);
         parserResult = JSON.parse(text);
         cache.parserSentAt = Date.now();
+        console.log(`[parser-success] id=${requestId} conversationId=${conversation.id} result=${JSON.stringify(parserResult).slice(0, 200)}`);
       } catch (exc) {
-        console.error('Parser call failed:', exc);
+        console.error(`[parser-failed] id=${requestId}`, exc);
         parserResult = { error: exc.message };
       }
+    } else {
+      console.log(`[parser-skipped] id=${requestId} conversationId=${conversation.id} reasons: parserUrl=${!!parserUrl} onboardingDone=${onboardingDone} alreadySent=${!!cache.parserSentAt}`);
     }
 
     const shouldFlush = plannerEnd || goodbye || closeIntent || onboardingDone;
@@ -254,9 +262,10 @@ router.post('/agents/whatsapp/inbound', async (req, res) => {
       setCached(cache.conversationId, cache);
     }
 
+    console.log(`[request-complete] id=${requestId} conversationId=${conversation.id} parserCalled=${!!parserResult && !parserResult.skipped}`);
     return res.json({ conversationId: conversation.id, reply, conversation_complete: true, parser_result: parserResult });
   } catch (err) {
-    console.error('inbound error', err);
+    console.error(`[request-error] id=${requestId}`, err);
     return res.status(500).json({ error: err?.message || 'Unexpected server error' });
   }
 });

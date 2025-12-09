@@ -27,6 +27,7 @@ jest.unstable_mockModule('../lib/state.js', () => ({
   upsertConversation: jest.fn(),
   insertMessagesBulk: jest.fn(),
   recordAiEvent: jest.fn(),
+  upsertConversationByAgentAndPhone: jest.fn(),
 }));
 jest.unstable_mockModule('../lib/llm.js', () => ({
   runChat: jest.fn().mockResolvedValue('hello!'),
@@ -56,6 +57,7 @@ describe('inbound conversation reuse and parser gating', () => {
     state.getConversationByExternalId.mockResolvedValue(null);
     state.getConversationByAgentAndPhone.mockResolvedValue(null);
     state.createConversation.mockResolvedValue({ id: 'new-conv' });
+    state.upsertConversationByAgentAndPhone.mockResolvedValue({ id: 'new-conv' });
     state.listMessages.mockResolvedValue([]);
     state.insertMessage.mockResolvedValue();
     state.nextSequence.mockResolvedValue(1);
@@ -66,7 +68,8 @@ describe('inbound conversation reuse and parser gating', () => {
   });
 
   it('reuses existing conversation for same agent+phone', async () => {
-    state.getConversationByAgentAndPhone.mockResolvedValue({ id: 'conv-1' });
+    // Mock existing conversation found by external ID (primary check)
+    state.getConversationByExternalId.mockResolvedValue({ id: 'conv-1' });
 
     const res = await request(app)
       .post('/agents/whatsapp/inbound')
@@ -75,11 +78,12 @@ describe('inbound conversation reuse and parser gating', () => {
         metadata: { flow: 'onboarding' },
         phone_number: '123',
         owner_id: 'owner-1',
+        conversation_id: 'external-123',
       });
 
     expect(res.status).toBe(200);
-    expect(state.getConversationByAgentAndPhone).toHaveBeenCalled();
-    expect(state.createConversation).not.toHaveBeenCalled();
+    expect(state.getConversationByExternalId).toHaveBeenCalled();
+    expect(state.upsertConversationByAgentAndPhone).not.toHaveBeenCalled();
     expect(res.body.conversationId).toBe('conv-1');
   });
 
@@ -125,5 +129,49 @@ describe('inbound conversation reuse and parser gating', () => {
     expect(res.status).toBe(200);
     expect(global.fetch).not.toHaveBeenCalled();
     expect(res.body.parser_result.skipped).toBe(true);
+  });
+
+  it('handles concurrent requests without race condition using upsert', async () => {
+    // Simulate race condition: no existing conversation found
+    state.getConversationByExternalId.mockResolvedValue(null);
+
+    // Mock upsert to return same conversation for concurrent requests
+    const sharedConversation = { id: 'conv-race-test' };
+    state.upsertConversationByAgentAndPhone.mockResolvedValue(sharedConversation);
+    state.listMessages.mockResolvedValue([]);
+
+    // Send two concurrent requests with same agent+phone
+    const [res1, res2] = await Promise.all([
+      request(app)
+        .post('/agents/whatsapp/inbound')
+        .send({
+          messages: [{ body: 'hello 1' }],
+          metadata: { flow: 'onboarding' },
+          phone_number: '573168248411',
+          owner_id: 'owner-1',
+        }),
+      request(app)
+        .post('/agents/whatsapp/inbound')
+        .send({
+          messages: [{ body: 'hello 2' }],
+          metadata: { flow: 'onboarding' },
+          phone_number: '573168248411',
+          owner_id: 'owner-1',
+        }),
+    ]);
+
+    // Both requests should succeed
+    expect(res1.status).toBe(200);
+    expect(res2.status).toBe(200);
+
+    // Both should get the same conversation ID
+    expect(res1.body.conversationId).toBe('conv-race-test');
+    expect(res2.body.conversationId).toBe('conv-race-test');
+
+    // Upsert should have been called (not createConversation with try/catch)
+    expect(state.upsertConversationByAgentAndPhone).toHaveBeenCalled();
+
+    // No duplicate key error should occur (no createConversation fallback)
+    expect(state.createConversation).not.toHaveBeenCalled();
   });
 });
