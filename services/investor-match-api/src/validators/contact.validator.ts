@@ -86,7 +86,7 @@ export const createContactSchema = Joi.object({
   current_role: Joi.string().max(100).allow(null),
   linkedin_url: Joi.string().uri().allow(null),
   email: Joi.string().email().allow(null),
-  tag: Joi.string().trim().max(100).allow(null),
+  tag: Joi.string().trim().max(100).allow(null, ''),
   
   // Experiences array
   experiences: Joi.array().items(
