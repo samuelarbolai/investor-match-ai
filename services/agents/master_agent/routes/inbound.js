@@ -73,11 +73,11 @@ function buildTranscript(messages, latestUser, latestAssistant) {
 async function flushConversation(cacheEntry, { parserUrl, forceParser = false, onboardingDone = false }) {
   const convoPatch = {
     id: cacheEntry.conversationId,
-    agent_id: cacheEntry.agentId || null,
-    phone_number: cacheEntry.phoneNumber || null,
+    // Don't update agent_id or phone_number - they're part of unique constraint and shouldn't change
     owner_id: cacheEntry.ownerId || null,
     contact_id: cacheEntry.contactId || null,
     prompt_version: cacheEntry.promptVersion,
+    parser_sent_at: cacheEntry.parserSentAt ? new Date(cacheEntry.parserSentAt).toISOString() : null,
     updated_at: new Date().toISOString(),
   };
   await upsertConversation(convoPatch);
@@ -171,7 +171,7 @@ router.post('/agents/whatsapp/inbound', async (req, res) => {
         contactId: event.contactId,
         messages: history || [],
         persistedSequence: history && history.length ? Math.max(...history.map((m) => m.sequence || 0)) : 0,
-        parserSentAt: null,
+        parserSentAt: conversation.parser_sent_at ? new Date(conversation.parser_sent_at).getTime() : null,
         status: 'active',
         lastTouchedAt: Date.now(),
       };
@@ -263,7 +263,12 @@ router.post('/agents/whatsapp/inbound', async (req, res) => {
     }
 
     console.log(`[request-complete] id=${requestId} conversationId=${conversation.id} parserCalled=${!!parserResult && !parserResult.skipped}`);
-    return res.json({ conversationId: conversation.id, reply, conversation_complete: true, parser_result: parserResult });
+    return res.json({ 
+      conversationId: conversation.id, 
+      reply, 
+      conversation_complete: true, 
+      parser_result: parserResult 
+    });
   } catch (err) {
     console.error(`[request-error] id=${requestId}`, err);
     return res.status(500).json({ error: err?.message || 'Unexpected server error' });

@@ -174,4 +174,128 @@ describe('inbound conversation reuse and parser gating', () => {
     // No duplicate key error should occur (no createConversation fallback)
     expect(state.createConversation).not.toHaveBeenCalled();
   });
+
+  it('does not update agent_id or phone_number when flushing conversation', async () => {
+    process.env.PARSER_URL = 'http://parser';
+    planner.planTools.mockResolvedValue({ name: 'pick_agent', args: { agent: 'onboarding' } });
+    llm.runChat.mockResolvedValue('Onboarding complete, goodbye!');
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      text: async () => '{"ok":true}',
+    });
+
+    state.upsertConversationByAgentAndPhone.mockResolvedValue({
+      id: 'conv-flush-test',
+      agent_id: 'agent-1',
+      phone_number: '123456',
+    });
+
+    await request(app)
+      .post('/agents/whatsapp/inbound')
+      .send({
+        messages: [{ body: 'final message' }],
+        metadata: { flow: 'onboarding' },
+        phone_number: '123456',
+        owner_id: 'owner-1',
+      });
+
+    // Check that upsertConversation was called (flush happens)
+    expect(state.upsertConversation).toHaveBeenCalled();
+
+    // Get the patch object passed to upsertConversation
+    const convoPatch = state.upsertConversation.mock.calls[0][0];
+
+    // Verify agent_id and phone_number are NOT in the patch
+    expect(convoPatch).not.toHaveProperty('agent_id');
+    expect(convoPatch).not.toHaveProperty('phone_number');
+
+    // Verify it has the fields we DO want to update
+    expect(convoPatch).toHaveProperty('id', 'conv-flush-test');
+    expect(convoPatch).toHaveProperty('updated_at');
+  });
+
+  it('persists parserSentAt to database when flushing', async () => {
+    process.env.PARSER_URL = 'http://parser';
+    planner.planTools.mockResolvedValue({ name: 'pick_agent', args: { agent: 'onboarding' } });
+    llm.runChat.mockResolvedValue('Onboarding complete!');
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      text: async () => '{"ok":true}',
+    });
+
+    state.upsertConversationByAgentAndPhone.mockResolvedValue({
+      id: 'conv-parser-test',
+      agent_id: 'agent-1',
+      phone_number: '999',
+    });
+
+    await request(app)
+      .post('/agents/whatsapp/inbound')
+      .send({
+        messages: [{ body: 'complete onboarding' }],
+        metadata: { flow: 'onboarding' },
+        phone_number: '999',
+        owner_id: 'owner-1',
+      });
+
+    // Check that upsertConversation was called
+    expect(state.upsertConversation).toHaveBeenCalled();
+
+    // Get the patch object
+    const convoPatch = state.upsertConversation.mock.calls[0][0];
+
+    // Verify parser_sent_at is set (as ISO string)
+    expect(convoPatch).toHaveProperty('parser_sent_at');
+    expect(convoPatch.parser_sent_at).not.toBeNull();
+    expect(typeof convoPatch.parser_sent_at).toBe('string');
+    expect(new Date(convoPatch.parser_sent_at).getTime()).toBeGreaterThan(0);
+  });
+
+  it('loads parserSentAt from database when rebuilding cache', async () => {
+    const pastTimestamp = '2024-01-01T12:00:00.000Z';
+
+    state.getConversationByExternalId.mockResolvedValue({
+      id: 'conv-with-parser-sent',
+      agent_id: 'agent-1',
+      phone_number: '555',
+      parser_sent_at: pastTimestamp,
+    });
+    state.listMessages.mockResolvedValue([
+      { role: 'user', content: 'hello', sequence: 1 },
+      { role: 'assistant', content: 'Onboarding complete', sequence: 2 },
+    ]);
+
+    process.env.PARSER_URL = 'http://parser';
+    planner.planTools.mockResolvedValue({ name: 'pick_agent', args: { agent: 'onboarding' } });
+    llm.runChat.mockResolvedValue('Thanks for following up!');
+    global.fetch = jest.fn();
+
+    // Store reference before request (cache gets populated during request)
+    let capturedCache = null;
+    cache.setCached.mockImplementation((id, data) => {
+      cacheStore.set(id, data);
+      if (id === 'conv-with-parser-sent') {
+        capturedCache = data;
+      }
+    });
+
+    await request(app)
+      .post('/agents/whatsapp/inbound')
+      .send({
+        messages: [{ body: 'follow up message' }],
+        metadata: { flow: 'onboarding' },
+        phone_number: '555',
+        owner_id: 'owner-1',
+        conversation_id: 'external-conv',
+      });
+
+    // Parser should be skipped because parserSentAt was loaded from DB
+    expect(global.fetch).not.toHaveBeenCalled();
+
+    // Check cache was populated with parserSentAt when it was created
+    expect(capturedCache).toBeDefined();
+    expect(capturedCache.parserSentAt).toBe(new Date(pastTimestamp).getTime());
+  });
 });
